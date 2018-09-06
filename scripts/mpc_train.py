@@ -9,7 +9,7 @@ from gym import wrappers
 import rospy
 import rospkg
 # import our training environment
-from openai_ros.task_envs.turtlebot2 import turtlebot2_maze
+from openai_ros.task_envs.turtlebot2 import turtlebot2_empty # need write taks env
 
 
 if __name__ == '__main__':
