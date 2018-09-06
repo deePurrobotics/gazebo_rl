@@ -21,8 +21,8 @@ turtlebot2: #namespace
 
     speed_step: 1.0 # Time to wait in the reset phases
 
-    linear_forward_speed: 0.5 # Spawned for going fowards
-    linear_backward_speed: 0.5 # Spawned for going fowards
+    linear_forward_speed: 0.5 # Spawned for going forwards
+    linear_backward_speed: 0.5 # Spawned for going backwards
     linear_turn_speed: 0.1 # Lienare speed when turning
     angular_speed: 0.3 # Angular speed when turning Left or Right
     init_linear_forward_speed: 0.0 # Initial linear speed in which we start each episode

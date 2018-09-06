@@ -36,4 +36,6 @@
     <remap from="scan" to="/kobuki/laser/scan"/>
   </node>
 
+  <!-- Load openai_ros environments parameters -->
+  <rosparam command="load" file="$(find turtlebot_rl)/config/crib_env_params.yaml" />
 </launch>
