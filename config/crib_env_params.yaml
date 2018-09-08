@@ -16,8 +16,8 @@ turtlebot2: #namespace
     running_step: 0.06 # Time for each step
     wait_time: 0.1 # Time to wait in the reset phases
 
-    n_actions: 4 # We have 4 actions, Forwards, Backwards, TurnLeft,TurnRight
-    n_observations: 6 # We have 6 different observations
+    n_actions: 16 # We have 4 linear actions, 4 angular actions
+    n_observations: 7 # We have 7 different observations
 
     speed_step: 1.0 # Time to wait in the reset phases
 
@@ -32,7 +32,8 @@ turtlebot2: #namespace
     obs_low: [-16, -16, -2, -2, -1, -1, -0.5]
     
     min_laser_value: 0 # Value considered there is an obstacle or crashed
-    
+    max_laser_value: 6 # Value considered Ok, no wall
+
     number_of_sectors: 3 # How many sectors we have
     min_range: 0.5 # Minimum meters below wich we consider we have crashed
     middle_range: 1.0 # Minimum meters below wich we consider we have crashed
@@ -40,6 +41,6 @@ turtlebot2: #namespace
     middle_laser_value: 1 # Middle value
     safe_laser_value: 0 # Value considered there is an obstacle or crashed
     
-    reward: -1 # Points Given to turn as action
+    reward: -1 # Points Given
     
 

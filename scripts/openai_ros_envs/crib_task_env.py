@@ -26,7 +26,7 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     self.action_space = spaces.Discrete(number_actions)
         
     # We set the reward range, which is not compulsory but here we do it.
-    self.reward_range = (-np.inf, 0)
+    self.reward_range = (-np.inf, np.inf)
         
         
     #number_observations = rospy.get_param('/turtlebot2/n_observations')
@@ -50,7 +50,12 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     self.init_angular_speed = rospy.get_param('/turtlebot2/init_angular_speed')
     self.min_range = rospy.get_param('/turtlebot2/min_range')
     self.obs_high = rospy.get_param('/turtlebot2/obs_high')
-    self.obs_low = rospy.get_param('/turtlebot2/obs_low')       
+    self.obs_low = rospy.get_param('/turtlebot2/obs_low')
+
+    self.new_ranges = rospy.get_param('/turtlebot2/new_ranges')
+    self.min_range = rospy.get_param('/turtlebot2/min_range')
+    self.max_laser_value = rospy.get_param('/turtlebot2/max_laser_value')
+    self.min_laser_value = rospy.get_param('/turtlebot2/min_laser_value')
     # We create two arrays based on the binary values that will be assigned
     # In the discretization method.
     high = np.array(self.obs_high) # upper bound of observations
@@ -63,8 +68,6 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
         
     # Rewards
     self.reward = rospy.get_param("/turtlebot2/reward")
-    self.end_episode_points = rospy.get_param("/turtlebot2/end_episode_points")
-
     self.cumulated_steps = 0.0
 
     # Here we will add any init functions prior to starting the MyRobotEnv
@@ -107,20 +110,7 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     :param action: The action integer that set s what movement to do next.
     """
     rospy.logdebug("Start Set Action ==>"+str(action))
-    # We convert the actions to speed movements to send to the parent class CubeSingleDiskEnv
-    # if action == 0: #FORWARD
-    #   linear_speed = self.linear_speed
-    #   angular_speed = 0.0
-    #   self.last_action = "FORWARDS"
-    # elif action == 1: #LEFT
-    #   linear_speed = self.linear_turn_speed
-    #   angular_speed = self.angular_speed
-    #   self.last_action = "TURN_LEFT"
-    # elif action == 2: #RIGHT
-    #   linear_speed = self.linear_turn_speed
-    #   angular_speed = -1*self.angular_speed
-    #   self.last_action = "TURN_RIGHT"
-
+    # We convert the actions to speed movements to send to the parent class turtlebot_env
     lin = self.linear_speed # for the sake of create speed pool
     ang = self.angular_speed
     lin_spd_pool = [-2*lin, -lin, lin, 2*lin]
@@ -135,7 +125,6 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
       update_rate=10,
       min_laser_distance=self.min_range
     )
-        
     rospy.logdebug("END Set Action ==>"+str(action))
 
   def _get_obs(self):
@@ -167,57 +156,53 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
 
     return self._episode_done
 
-    def _compute_reward(self, observations, done):
-
-        if not done:
-            if self.last_action == "FORWARDS":
-                reward = self.forwards_reward
-            else:
-                reward = self.turn_reward
-        else:
-            reward = -1*self.end_episode_points
+  def _compute_reward(self, observations, done):
+    if not done:
+      reward = -1
+    else:
+      reward = 0
 
 
-        rospy.logdebug("reward=" + str(reward))
-        self.cumulated_reward += reward
-        rospy.logdebug("Cumulated_reward=" + str(self.cumulated_reward))
-        self.cumulated_steps += 1
-        rospy.logdebug("Cumulated_steps=" + str(self.cumulated_steps))
-        
-        return reward
+    rospy.logdebug("reward=" + str(reward))
+    self.cumulated_reward += reward
+    rospy.logdebug("Cumulated_reward=" + str(self.cumulated_reward))
+    self.cumulated_steps += 1
+    rospy.logdebug("Cumulated_steps=" + str(self.cumulated_steps))
+    
+    return reward
 
 
     # Internal TaskEnv Methods
     
-    def discretize_observation(self,data,new_ranges):
-        """
-        Discards all the laser readings that are not multiple in index of new_ranges
-        value.
-        """
-        self._episode_done = False
+  def discretize_observation(self,data,new_ranges):
+    """
+    Discards all the laser readings that are not multiple in index of new_ranges
+    value.
+    """
+    self._episode_done = False
         
-        discretized_ranges = []
-        mod = len(data.ranges)/new_ranges
-        
-        rospy.logdebug("data=" + str(data))
-        rospy.logwarn("new_ranges=" + str(new_ranges))
-        rospy.logwarn("mod=" + str(mod))
-        
-        for i, item in enumerate(data.ranges):
-            if (i%mod==0):
-                if item == float ('Inf') or np.isinf(item):
-                    discretized_ranges.append(self.max_laser_value)
-                elif np.isnan(item):
-                    discretized_ranges.append(self.min_laser_value)
-                else:
-                    discretized_ranges.append(int(item))
-                    
-                if (self.min_range > item > 0):
-                    rospy.logerr("done Validation >>> item=" + str(item)+"< "+str(self.min_range))
-                    self._episode_done = True
-                else:
-                    rospy.logwarn("NOT done Validation >>> item=" + str(item)+"< "+str(self.min_range))
-                    
+    discretized_ranges = []
+    mod = len(data.ranges)/new_ranges
+    
+    rospy.logdebug("data=" + str(data))
+    rospy.logwarn("new_ranges=" + str(new_ranges))
+    rospy.logwarn("mod=" + str(mod))
+    
+    for i, item in enumerate(data.ranges):
+      if (i%mod==0):
+        if item == float ('Inf') or np.isinf(item):
+          discretized_ranges.append(self.max_laser_value)
+        elif np.isnan(item):
+          discretized_ranges.append(self.min_laser_value)
+        else:
+          discretized_ranges.append(int(item))
 
-        return discretized_ranges
+        if (self.min_range > item > 0):
+          rospy.logerr("done Validation >>> item=" + str(item)+"< "+str(self.min_range))
+          self._episode_done = True
+        else:
+          rospy.logwarn("NOT done Validation >>> item=" + str(item)+"< "+str(self.min_range))
+        
+
+    return discretized_ranges
 
