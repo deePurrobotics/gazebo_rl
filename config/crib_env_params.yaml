@@ -26,7 +26,7 @@ turtlebot2: #namespace
     init_linear_speed: 0.0 # Initial linear speed in which we start each episode
     init_angular_speed: 0.0 # Initial angular speed in which we start each episode
     
-    new_ranges: 5 # How many laser readings we jump in each observation reading, the bigger the less laser resolution
+    new_ranges: 7 # How many laser readings we jump in each observation reading, the bigger the less laser resolution
     min_range: 0.5 # Minimum meters below wich we consider we have crashed
     obs_high: [16, 16, 2, 2, 1, 1, 0.5]
     obs_low: [-16, -16, -2, -2, -1, -1, -0.5]
