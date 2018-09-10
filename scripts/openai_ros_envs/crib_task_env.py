@@ -1,6 +1,8 @@
 import rospy
 import numpy as np
 import time
+import math
+import tf
 from gym import spaces
 import turtlebot_env
 from gym.envs.registration import register
@@ -30,18 +32,6 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
         
         
     #number_observations = rospy.get_param('/turtlebot2/n_observations')
-    """
-    We set the Observation space for the 6 observations
-    cube_observations = [
-      x,
-      y,
-      v_x,
-      v_y,
-      cos(yaw),
-      sin(yaw),
-      w_yaw
-    ]
-    """
         
     # Actions and Observations
     self.linear_speed = rospy.get_param('/turtlebot2/linear_speed')
@@ -129,23 +119,41 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
 
   def _get_obs(self):
     """
-    Here we define what sensor data defines our robots observations
-    To know which Variables we have acces to, we need to read the
-    TurtleBot2Env API DOCS
+    Here we define states as gazebo model_states
     :return:
+    7 observations
+    [
+      x,
+      y,
+      v_x,
+      v_y,
+      cos(yaw),
+      sin(yaw),
+      yaw_dot
+    ]
     """
     rospy.logdebug("Start Get Observation ==>")
     # We get the laser scan data
-    laser_scan = self.get_laser_scan()
-
-    discretized_observations = self.discretize_observation(
-      laser_scan,
-      self.new_ranges
+    model_states = self.get_model_states()
+    x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
+    y = model_states.pose[-1].position.y
+    v_x = model_states.twist[-1].linear.x
+    v_y = model_states.twist[-1].linear.y
+    quat = (
+      model_states.pose[-1].orientation.x,
+      model_states.pose[-1].orientation.y,
+      model_states.pose[-1].orientation.z,
+      model_states.pose[-1].orientation.w
     )
-
-    rospy.logdebug("Observations==>"+str(discretized_observations))
+    euler = tf.transformations.euler_from_quaternion(quat)
+    cos_yaw = math.cos(euler[2])
+    sin_yaw = math.sin(euler[2])
+    yaw_dot = model_states.twist[-1].angular.z
+        
+    observations = [x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot]
+    rospy.logdebug("Observations==>"+str(observations))
     rospy.logdebug("END Get Observation ==>")
-    return discretized_observations
+    return observations
         
 
   def _is_done(self, observations):
@@ -171,38 +179,4 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     
     return reward
 
-
-    # Internal TaskEnv Methods
-    
-  def discretize_observation(self,data,new_ranges):
-    """
-    Discards all the laser readings that are not multiple in index of new_ranges
-    value.
-    """
-    self._episode_done = False
-        
-    discretized_ranges = []
-    mod = len(data.ranges)/new_ranges
-    
-    rospy.logdebug("data=" + str(data))
-    rospy.logwarn("new_ranges=" + str(new_ranges))
-    rospy.logwarn("mod=" + str(mod))
-    
-    for i, item in enumerate(data.ranges):
-      if (i%mod==0):
-        if item == float ('Inf') or np.isinf(item):
-          discretized_ranges.append(self.max_laser_value)
-        elif np.isnan(item):
-          discretized_ranges.append(self.min_laser_value)
-        else:
-          discretized_ranges.append(int(item))
-
-        if (self.min_range > item > 0):
-          rospy.logerr("done Validation >>> item=" + str(item)+"< "+str(self.min_range))
-          self._episode_done = True
-        else:
-          rospy.logwarn("NOT done Validation >>> item=" + str(item)+"< "+str(self.min_range))
-        
-
-    return discretized_ranges
 

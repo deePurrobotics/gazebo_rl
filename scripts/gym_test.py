@@ -17,19 +17,19 @@ from gazebo_msgs.msg import ModelStates, LinkStates
 from openai_ros_envs import crib_task_env # need write task env
 
 rospy.init_node('gym_test', anonymous=True, log_level=rospy.WARN)    
-#env = gym.make('TurtleBotCrib-v0')
+env = gym.make('TurtleBotCrib-v0')
 
 #obs = env.reset()
 
-def pose_cb(data):
-  global po
-  global tw
+# def pose_cb(data):
+#   global po
+#   global tw
 
-  po = data.pose[-1].position
-  # tw = data.twist[-1]
-  print(po)
-  # print(tw)
+#   po = data.pose[-1].position
+#   # tw = data.twist[-1]
+#   print(po)
+#   # print(tw)
     
-base_pose = rospy.Subscriber("/gazebo/model_states", ModelStates, pose_cb)
+# base_pose = rospy.Subscriber("/gazebo/model_states", ModelStates, pose_cb)
 
-rospy.spin()
+#rospy.spin()

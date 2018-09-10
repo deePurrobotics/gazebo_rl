@@ -6,6 +6,7 @@ from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
 from sensor_msgs.msg import PointCloud2
+from gazebo_msgs.msg import ModelStates
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 
@@ -70,6 +71,7 @@ class TurtleBotEnv(robot_gazebo_env.RobotGazeboEnv):
     rospy.Subscriber("/camera/depth/points", PointCloud2, self._camera_depth_points_callback)
     rospy.Subscriber("/camera/rgb/image_raw", Image, self._camera_rgb_image_raw_callback)
     rospy.Subscriber("/kobuki/laser/scan", LaserScan, self._laser_scan_callback)
+    rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
 
     self._cmd_vel_pub = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=1)
     self._check_publishers_connection()
@@ -100,7 +102,8 @@ class TurtleBotEnv(robot_gazebo_env.RobotGazeboEnv):
     #self._check_camera_depth_image_raw_ready()
     #self._check_camera_depth_points_ready()
     #self._check_camera_rgb_image_raw_ready()
-    self._check_laser_scan_ready()
+    #self._check_laser_scan_ready()
+    self._check_model_states_ready()
     rospy.logdebug("ALL SENSORS READY")
 
   def _check_odom_ready(self):
@@ -166,6 +169,18 @@ class TurtleBotEnv(robot_gazebo_env.RobotGazeboEnv):
         
     return self.laser_scan    
 
+  def _check_model_states_ready(self):
+    self.model_states = None
+    rospy.logdebug("Waiting for /gazebo/model_states to be READY...")
+    while self.model_states is None and not rospy.is_shutdown():
+      try:
+        self.model_states = rospy.wait_for_message("/gazebo/model_states", ModelStates, timeout=5.0)
+        rospy.logdebug("Current /gazebo/model_states READY=>")
+      except:
+        rospy.logerr("Current /gazebo/model_states not ready yet, retrying for getting model_states")
+        
+    return self.model_states
+
   # Call back functions read subscribed sensors' data
   # ----------------------------
   def _odom_callback(self, data):
@@ -182,6 +197,9 @@ class TurtleBotEnv(robot_gazebo_env.RobotGazeboEnv):
         
   def _laser_scan_callback(self, data):
     self.laser_scan = data
+
+  def _model_states_callback(self, data):
+    self.model_states = data
 
 
   def _check_publishers_connection(self):
@@ -354,3 +372,6 @@ class TurtleBotEnv(robot_gazebo_env.RobotGazeboEnv):
         
   def get_laser_scan(self):
     return self.laser_scan
+
+  def get_model_states(self):
+    return self.model_states
