@@ -27,6 +27,6 @@ def pose_cb(data):
   print(po)
   # print(tw)
     
-base_pose = rospy.Subscriber("/gazebo/model_states", ModelStates, pose_cb)
+# base_pose = rospy.Subscriber("/gazebo/model_states", ModelStates, pose_cb)
 
-rospy.spin()
+# rospy.spin()
