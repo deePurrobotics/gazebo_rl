@@ -7,6 +7,8 @@ from gym import spaces
 import turtlebot_env
 from gym.envs.registration import register
 
+from gazebo_msgs.msg import ModelStates
+
 # The path is __init__.py of openai_ros, where we import the TurtleBot2MazeEnv directly
 timestep_limit_per_episode = 10000 # Can be any Value
 
@@ -60,19 +62,38 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     self.reward = rospy.get_param("/turtlebot2/reward")
     self.cumulated_steps = 0.0
 
+    # Init pose
+    self.init_pose = rospy.Publisher("gazebo/set_model_states", ModelStates, queue_size=1)
+
     # Here we will add any init functions prior to starting the MyRobotEnv
     super(TurtleBotCribEnv, self).__init__()
 
   def _set_init_pose(self):
     """Sets the Robot in its init pose
     """
-    self.move_base(
-      self.init_linear_speed,
-      self.init_angular_speed,
-      epsilon=0.05,
-      update_rate=10,
-      min_laser_distance=-1
-    )
+    # self.move_base(
+    #   self.init_linear_speed,
+    #   self.init_angular_speed,
+    #   epsilon=0.05,
+    #   update_rate=10,
+    #   min_laser_distance=-1
+    # )
+    # init_pose = ModelStates()
+    # init_pose.model_name = "mobile_base"
+    # init_pose.pose.position.x = 1
+    # init_pose.pose.position.y = 2
+    # init_pose.pose.position.z = 0
+    # init_pose.pose.orientation.x = 0
+    # init_pose.pose.orientation.y = 0
+    # init_pose.pose.orientation.z = 0
+    # init_pose.pose.orientation.w = 0
+    # init_pose.twist.linear.x = 1
+    # init_pose.twist.linear.y = 2
+    # init_pose.twist.linear.z = 0
+    # init_pose.twist.angular.x = 0
+    # init_pose.twist.angular.y = 0
+    # init_pose.twist.angular.z = 0
+    # self.init_pose.publish(init_pose)
 
     return True
 

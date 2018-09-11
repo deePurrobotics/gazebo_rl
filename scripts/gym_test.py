@@ -21,15 +21,12 @@ env = gym.make('TurtleBotCrib-v0')
 
 #obs = env.reset()
 
-# def pose_cb(data):
-#   global po
-#   global tw
-
-#   po = data.pose[-1].position
-#   # tw = data.twist[-1]
-#   print(po)
-#   # print(tw)
+def pose_cb(data):
+  po = data.pose[-1].position
+  # tw = data.twist[-1]
+  print(po)
+  # print(tw)
     
-# base_pose = rospy.Subscriber("/gazebo/model_states", ModelStates, pose_cb)
+base_pose = rospy.Subscriber("/gazebo/model_states", ModelStates, pose_cb)
 
-#rospy.spin()
+rospy.spin()
