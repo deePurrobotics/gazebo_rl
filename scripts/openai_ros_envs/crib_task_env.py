@@ -1,7 +1,10 @@
+from __future__ import print_function
+
 import rospy
 import numpy as np
 import time
 import math
+import random
 import tf
 from gym import spaces
 import turtlebot_env
@@ -9,7 +12,7 @@ from gym.envs.registration import register
 
 from gazebo_msgs.msg import *
 from gazebo_msgs.srv import *
-from geometry_msgs.msg import Pose, Twist
+from geometry_msgs.msg import Pose, Twist, Point
 
 # The path is __init__.py of openai_ros, where we import the TurtleBot2MazeEnv directly
 timestep_limit_per_episode = 10000 # Can be any Value
@@ -42,14 +45,10 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     self.angular_speed = rospy.get_param('/turtlebot2/angular_speed')
     self.init_linear_speed = rospy.get_param('/turtlebot2/init_linear_speed')
     self.init_angular_speed = rospy.get_param('/turtlebot2/init_angular_speed')
-    self.min_range = rospy.get_param('/turtlebot2/min_range')
     self.obs_high = rospy.get_param('/turtlebot2/obs_high')
     self.obs_low = rospy.get_param('/turtlebot2/obs_low')
-
-    self.new_ranges = rospy.get_param('/turtlebot2/new_ranges')
     self.min_range = rospy.get_param('/turtlebot2/min_range')
-    self.max_laser_value = rospy.get_param('/turtlebot2/max_laser_value')
-    self.min_laser_value = rospy.get_param('/turtlebot2/min_laser_value')
+
     # We create two arrays based on the binary values that will be assigned
     # In the discretization method.
     high = np.array(self.obs_high) # upper bound of observations
@@ -65,64 +64,58 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     self.cumulated_steps = 0.0
 
     # Init model state
-    self.init_state = rospy.Publisher("gazebo/set_model_states", ModelStates, queue_size=1)
     self.set_init_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+    self.position_goal = [0, 0]
+    self.position_obs = [0, 0]
+    self.goal_publisher = rospy.Publisher("/turtlebot_rl/goal", Point, queue_size=1)
     # Here we will add any init functions prior to starting the MyRobotEnv
     super(TurtleBotCribEnv, self).__init__()
 
   def _set_init_pose(self):
-    """Sets the Robot in its init pose
+    """Sets the Robot in its init pose, randomly
     """
+    x = random.uniform(-4, 4)
+    y = random.uniform(-4, 4)
+    w = random.uniform(-math.pi, math.pi)    
     model_state = ModelState()
     model_state.model_name = "mobile_base"
-    model_state.pose.position.x = 1
-    model_state.pose.position.y = 2
+    model_state.pose.position.x = x
+    model_state.pose.position.y = y
     model_state.pose.position.z = 0
     model_state.pose.orientation.x = 0
     model_state.pose.orientation.y = 0
-    model_state.pose.orientation.z = 0
-    model_state.pose.orientation.w = 0
+    model_state.pose.orientation.z = 1
+    model_state.pose.orientation.w = w
     model_state.twist.linear.x = 0.0
     model_state.twist.linear.y = 0
     model_state.twist.linear.z = 0
     model_state.twist.angular.x = 0.0
     model_state.twist.angular.y = 0
     model_state.twist.angular.z = 0.0
-    model_state.reference_frame = 'world'
+    model_state.reference_frame = "world"
     rospy.wait_for_service('/gazebo/set_model_state')
     try:
       self.set_init_state(model_state)
     except rospy.ServiceException as e:
       print ("/gazebo/pause_physics service call failed")
     time.sleep(0.2)
-    # self.move_base(
-    #   self.init_linear_speed,
-    #   self.init_angular_speed,
-    #   epsilon=0.05,
-    #   update_rate=10,
-    #   min_laser_distance=-1
-    # )
-    # state = ModelStates()
-    # state.name = "mobile_base"
-    # state.pose = Pose()
-    # state.pose.position.x = 1
-    # state.pose.position.y = 2
-    # state.pose.position.z = 0
-    # state.pose.orientation.x = 0
-    # state.pose.orientation.y = 0
-    # state.pose.orientation.z = 0.8
-    # state.pose.orientation.w = 1
-    # state.twist = Twist()
-    # # state.twist.linear.x = 0
-    # # state.twist.linear.y = 0
-    # # state.twist.linear.z = 0
-    # # state.twist.angular.x = 0
-    # # state.twist.angular.y = 0
-    # # state.twist.angular.z = 0
-    # self.init_state.publish(state)
+    self.init_states = self.get_model_states()
+    # set goal point
+    goal_x = random.uniform(-4, 4)
+    goal_y = random.uniform(-4, 4)
+    init_x = self.init_states.pose[-1].position.x
+    init_y = self.init_states.pose[-1].position.y
+    while math.ceil(goal_x)==math.ceil(init_x) and math.ceil(goal_y)==math.ceil(init_y):
+      goal_x = random.uniform(-4, 4)
+      goal_y = random.uniform(-4, 4)
+    self.position_goal = [goal_x, goal_y]
+    msg = Point()
+    msg.x = goal_x
+    msg.y = goal_y
+    self.goal_publisher.publish(msg)
+    rospy.logwarn("Goal point was set @ {}".format(self.position_goal))
 
     return True
-
 
   def _init_env_variables(self):
     """
@@ -198,26 +191,30 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     yaw_dot = model_states.twist[-1].angular.z
         
     observations = [x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot]
+    self.position_obs = [x, y]
     rospy.logdebug("Observations==>"+str(observations))
     rospy.logdebug("END Get Observation ==>")
     return observations
         
 
   def _is_done(self, observations):
-    if self._episode_done:
-      rospy.logerr("TurtleBot2 is Too Close to wall==>")
+    if math.ceil(self.position_obs[0])==math.ceil(self.position_goal[0]) and \
+    math.ceil(self.position_obs[1])==math.ceil(self.position_goal[1]): # state arrived
+      self._episode_done = True
+      rospy.logwarn("Turtlebot reached destination")
     else:
-      rospy.logerr("TurtleBot2 is Ok ==>")
+      self._episode_done = False
+      rospy.loginfo("TurtleBot is Ok ==>")
 
     return self._episode_done
 
   def _compute_reward(self, observations, done):
     if not done:
-      reward = -1
+      position_goal = np.array(self.position_goal)
+      position_obs = np.array(self.position_obs)
+      reward = -np.linalg.norm(position_goal-position_obs)
     else:
       reward = 0
-
-
     rospy.logdebug("reward=" + str(reward))
     self.cumulated_reward += reward
     rospy.logdebug("Cumulated_reward=" + str(self.cumulated_reward))
