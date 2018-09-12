@@ -16,7 +16,7 @@ turtlebot2: #namespace
     running_step: 0.06 # Time for each step
     wait_time: 0.1 # Time to wait in the reset phases
 
-    n_actions: 16 # We have 4 linear actions, 4 angular actions
+    n_actions: 4 # We have 4 linear actions, 4 angular actions
     n_observations: 7 # We have 7 different observations
 
     speed_step: 1.0 # Time to wait in the reset phases

@@ -143,8 +143,8 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     # We convert the actions to speed movements to send to the parent class turtlebot_env
     lin = self.linear_speed # for the sake of create speed pool
     ang = self.angular_speed
-    lin_spd_pool = [-2*lin, -lin, lin, 2*lin]
-    ang_spd_pool = [-2*ang, -ang, ang, 2*ang]
+    lin_spd_pool = [-lin, lin]
+    ang_spd_pool = [-2*ang, 2*ang]
     i_lin = action/len(ang_spd_pool)
     i_ang = action%len(ang_spd_pool) 
     # We tell TurtleBot2 the linear and angular speed to set to execute
@@ -192,9 +192,10 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
         
     observations = [x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot]
     self.position_obs = [x, y]
+    discrete_observations = np.floor(self.position_obs).astype(int)
     rospy.logdebug("Observations==>"+str(observations))
     rospy.logdebug("END Get Observation ==>")
-    return observations
+    return discrete_observations
         
 
   def _is_done(self, observations):
