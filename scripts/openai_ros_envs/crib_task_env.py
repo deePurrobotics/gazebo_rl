@@ -7,7 +7,8 @@ from gym import spaces
 import turtlebot_env
 from gym.envs.registration import register
 
-from gazebo_msgs.msg import ModelStates
+from gazebo_msgs.msg import *
+from gazebo_msgs.srv import *
 from geometry_msgs.msg import Pose, Twist
 
 # The path is __init__.py of openai_ros, where we import the TurtleBot2MazeEnv directly
@@ -65,13 +66,34 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
 
     # Init model state
     self.init_state = rospy.Publisher("gazebo/set_model_states", ModelStates, queue_size=1)
-
+    self.set_init_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     # Here we will add any init functions prior to starting the MyRobotEnv
     super(TurtleBotCribEnv, self).__init__()
 
   def _set_init_pose(self):
     """Sets the Robot in its init pose
     """
+    model_state = ModelState()
+    model_state.model_name = "mobile_base"
+    model_state.pose.position.x = 1
+    model_state.pose.position.y = 2
+    model_state.pose.position.z = 0
+    model_state.pose.orientation.x = 0
+    model_state.pose.orientation.y = 0
+    model_state.pose.orientation.z = 0
+    model_state.pose.orientation.w = 0
+    model_state.twist.linear.x = 0.0
+    model_state.twist.linear.y = 0
+    model_state.twist.linear.z = 0
+    model_state.twist.angular.x = 0.0
+    model_state.twist.angular.y = 0
+    model_state.twist.angular.z = 0.0
+    model_state.reference_frame = 'world'
+    rospy.wait_for_service('/gazebo/set_model_state')
+    try:
+      self.set_init_state(model_state)
+    except rospy.ServiceException as e:
+      print ("/gazebo/pause_physics service call failed")
     # self.move_base(
     #   self.init_linear_speed,
     #   self.init_angular_speed,
@@ -79,24 +101,24 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     #   update_rate=10,
     #   min_laser_distance=-1
     # )
-    state = ModelStates()
-    state.name = "mobile_base"
-    state.pose = Pose()
-    state.pose.position.x = 1
-    state.pose.position.y = 2
-    state.pose.position.z = 0
-    state.pose.orientation.x = 0
-    state.pose.orientation.y = 0
-    state.pose.orientation.z = 0.8
-    state.pose.orientation.w = 1
-    state.twist = Twist()
-    # state.twist.linear.x = 0
-    # state.twist.linear.y = 0
-    # state.twist.linear.z = 0
-    # state.twist.angular.x = 0
-    # state.twist.angular.y = 0
-    # state.twist.angular.z = 0
-    self.init_state.publish(state)
+    # state = ModelStates()
+    # state.name = "mobile_base"
+    # state.pose = Pose()
+    # state.pose.position.x = 1
+    # state.pose.position.y = 2
+    # state.pose.position.z = 0
+    # state.pose.orientation.x = 0
+    # state.pose.orientation.y = 0
+    # state.pose.orientation.z = 0.8
+    # state.pose.orientation.w = 1
+    # state.twist = Twist()
+    # # state.twist.linear.x = 0
+    # # state.twist.linear.y = 0
+    # # state.twist.linear.z = 0
+    # # state.twist.angular.x = 0
+    # # state.twist.angular.y = 0
+    # # state.twist.angular.z = 0
+    # self.init_state.publish(state)
 
     return True
 

@@ -2,7 +2,6 @@ import numpy
 import rospy
 import robot_gazebo_env
 from std_msgs.msg import Float64
-from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
 from sensor_msgs.msg import PointCloud2
@@ -113,7 +112,6 @@ class TurtleBotEnv(robot_gazebo_env.RobotGazeboEnv):
       try:
         self.odom = rospy.wait_for_message("/odom", Odometry, timeout=5.0)
         rospy.logdebug("Current /odom READY=>")
-
       except:
         rospy.logerr("Current /odom not ready yet, retrying for getting odom")
 
@@ -126,7 +124,6 @@ class TurtleBotEnv(robot_gazebo_env.RobotGazeboEnv):
       try:
         self.camera_depth_image_raw = rospy.wait_for_message("/camera/depth/image_raw", Image, timeout=5.0)
         rospy.logdebug("Current /camera/depth/image_raw READY=>")
-
       except:
         rospy.logerr("Current /camera/depth/image_raw not ready yet, retrying for getting camera_depth_image_raw")
 

@@ -111,7 +111,6 @@ class RobotGazeboEnv(gym.Env):
       self.controllers_object.reset_controllers()
       self._check_all_systems_ready()
       self.gazebo.pauseSim()
-            
     else:
       self.gazebo.unpauseSim()
       self._check_all_systems_ready()
