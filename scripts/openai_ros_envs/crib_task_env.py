@@ -94,6 +94,7 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
       self.set_init_state(model_state)
     except rospy.ServiceException as e:
       print ("/gazebo/pause_physics service call failed")
+    time.sleep(0.2)
     # self.move_base(
     #   self.init_linear_speed,
     #   self.init_angular_speed,
@@ -179,7 +180,7 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     ]
     """
     rospy.logdebug("Start Get Observation ==>")
-    # We get the laser scan data
+    # We get the model states data
     model_states = self.get_model_states()
     x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
     y = model_states.pose[-1].position.y
