@@ -25,7 +25,7 @@ if __name__ == '__main__':
     rospack = rospkg.RosPack()
     pkg_path = rospack.get_path('turtlebot_rl')
     outdir = pkg_path + '/training_results'
-    env = wrappers.Monitor(env, outdir, force=True)
+    # env = wrappers.Monitor(env, outdir, force=True)
     rospy.loginfo("Monitor Wrapper started")
 
     last_time_steps = numpy.ndarray(0)

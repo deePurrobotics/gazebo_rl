@@ -10,7 +10,7 @@ turtlebot2: #namespace
     epsilon: 0.9
     epsilon_discount: 0.999
     nepisodes: 1000
-    nsteps: 10
+    nsteps: 500
     number_splits: 10 #set to change the number of state splits for the continuous problem and also the number of env_variable splits
 
     running_step: 0.06 # Time for each step
