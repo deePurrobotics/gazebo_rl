@@ -21,6 +21,7 @@ register(
   id='TurtleBotCrib-v0',
   entry_point='openai_ros_envs.crib_task_env:TurtleBotCribEnv',
   timestep_limit=timestep_limit_per_episode,
+  max_episode_steps = 1000
 )
 
 class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
@@ -43,8 +44,6 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
     # Actions and Observations
     self.linear_speed = rospy.get_param('/turtlebot2/linear_speed')
     self.angular_speed = rospy.get_param('/turtlebot2/angular_speed')
-    self.init_linear_speed = rospy.get_param('/turtlebot2/init_linear_speed')
-    self.init_angular_speed = rospy.get_param('/turtlebot2/init_angular_speed')
     self.obs_high = rospy.get_param('/turtlebot2/obs_high')
     self.obs_low = rospy.get_param('/turtlebot2/obs_low')
     self.min_range = rospy.get_param('/turtlebot2/min_range')
@@ -109,10 +108,6 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
       goal_x = random.uniform(-4, 4)
       goal_y = random.uniform(-4, 4)
     self.position_goal = [goal_x, goal_y]
-    msg = Point()
-    msg.x = goal_x
-    msg.y = goal_y
-    self.goal_publisher.publish(msg)
     rospy.logwarn("Goal point was set @ {}".format(self.position_goal))
 
     return True

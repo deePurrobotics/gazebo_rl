@@ -18,6 +18,7 @@ if __name__ == '__main__':
 
     # Create the Gym environment
     env = gym.make('TurtleBotCrib-v0')
+    env.spec.timestep_limit = 500
     rospy.loginfo("Gym environment done")
 
     # Set the logging system

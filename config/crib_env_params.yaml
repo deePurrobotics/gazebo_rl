@@ -9,8 +9,8 @@ turtlebot2: #namespace
     gamma: 0.7
     epsilon: 0.9
     epsilon_discount: 0.999
-    nepisodes: 500
-    nsteps: 500
+    nepisodes: 1000
+    nsteps: 10
     number_splits: 10 #set to change the number of state splits for the continuous problem and also the number of env_variable splits
 
     running_step: 0.06 # Time for each step
@@ -34,9 +34,8 @@ turtlebot2: #namespace
     min_laser_value: 0 # Value considered there is an obstacle or crashed
     max_laser_value: 6 # Value considered Ok, no wall
 
-    number_of_sectors: 3 # How many sectors we have
+    number_of_sectors: 100 # How many sectors we have
     min_range: 0.5 # Minimum meters below wich we consider we have crashed
-    middle_range: 1.0 # Minimum meters below wich we consider we have crashed
     danger_laser_value: 2 # Value considered Ok, no wall
     middle_laser_value: 1 # Middle value
     safe_laser_value: 0 # Value considered there is an obstacle or crashed
