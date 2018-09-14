@@ -11,7 +11,7 @@ from geometry_msgs.msg import Twist
 
 
 
-class TurtleBotEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
+class TurtleBotSensorEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
   """Superclass for all TurtleBot environments.
   """
 

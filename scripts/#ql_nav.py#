@@ -69,6 +69,7 @@ if __name__ == '__main__':
             rospy.logwarn("Next action is:%d", action)
             # Execute the action in the environment and get feedback
             observation, reward, done, info = env.step(action)
+            state = 
 
             rospy.loginfo(str(observation) + " " + str(reward))
             cumulated_reward += reward
