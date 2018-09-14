@@ -19,6 +19,7 @@ class TurtlebotGazeboEnv(gym.Env):
     self.max_vel = 1 # vs, vy
     self.max_tri = 1 # sinyaw, cosyaw
     self.max_w = 1 # yawdot
+    self.init_position = None
     self.goal_position = None
 
     self.low = np.array(
@@ -54,7 +55,7 @@ class TurtlebotGazeboEnv(gym.Env):
     self.state = self._get_obs() # continuous
     self.state = np.clip(self.state, -self.low, self.high)
     done = self._is_done(self.state, self.goal_position)
-    reward = self._compute_reward(self.state, self.goal_position, done)
+    reward = self._compute_reward(self.state, self.init_position, self.goal_position, done)
 
     return np.array(self.state), reward, done, {}
 
@@ -64,7 +65,7 @@ class TurtlebotGazeboEnv(gym.Env):
     self.gazebo.unpauseSim()
     self._check_all_systems_ready()
     self.gazebo.pauseSim()
-    self.goal_position = self._set_init_cond()
+    self.init_position, self.goal_position = self._set_init_cond()
     self.gazebo.unpauseSim()
     self.gazebo.pauseSim()
     self.state = self._get_obs()

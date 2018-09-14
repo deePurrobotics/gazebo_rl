@@ -63,6 +63,7 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
 
     # Set model state service
     self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+    self.init_position = None
     # Here we will add any init functions prior to starting the MyRobotEnv
     super(TurtleBotCribEnv, self).__init__()
 
@@ -109,11 +110,12 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
       goal_y = random.uniform(-5, 5)
     goal_position = [goal_x, goal_y]
     rospy.logwarn("Goal point was set @ {}".format(goal_position))
+    init_position = [bot_x, bot_y]
 
     self._episode_done = False
     time.sleep(0.2)
     
-    return goal_position
+    return init_position, goal_position
 
   def _init_env_variables(self):
     """
@@ -202,9 +204,10 @@ class TurtleBotCribEnv(turtlebot_env.TurtleBotEnv):
 
     return self._episode_done
 
-  def _compute_reward(self, obs, goal, done):
+  def _compute_reward(self, obs, init, goal, done):
     if not done:
-      reward = -np.linalg.norm(np.array(obs[:2])-np.array(goal))
+      reward = -np.linalg.norm(np.array(obs[:2]) - np.array(goal)) \
+               / np.linalg.norm(np.array(init) - np.array(goal))
     else:
       reward = 0
     rospy.logdebug("reward=" + str(reward))

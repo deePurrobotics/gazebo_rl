@@ -23,7 +23,6 @@ class QLearn:
     def learnQ(self, state, action, reward, value):
         '''
         Q-learning:
-            Q(s, a) += alpha * (reward(s,a) + max(Q(s') - Q(s,a))
             Q(s,a) += (1-alpha)*Q(s,a)+alpha*(reward(s,a)+gamma*max(Q(s',a')))
         '''
         oldv = self.q.get((state, action), None)
