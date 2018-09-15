@@ -7,7 +7,7 @@ import math
 import random
 import tf
 from gym import spaces
-import turtlebot_env
+import turtlebot_robot_env
 from gym.envs.registration import register
 
 from gazebo_msgs.msg import *

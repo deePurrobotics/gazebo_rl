@@ -1,6 +1,6 @@
 import numpy
 import rospy
-import turtlebot_gazebo_env
+import gym_gazebo_env
 from std_msgs.msg import Float64
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
@@ -11,7 +11,7 @@ from geometry_msgs.msg import Twist
 
 
 
-class TurtleBotEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
+class TurtleBotSensorEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
   """Superclass for all TurtleBot environments.
   """
 
