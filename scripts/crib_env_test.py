@@ -16,17 +16,9 @@ from gazebo_msgs.msg import ModelStates, LinkStates
 # import our training environment
 from openai_ros_envs import crib_task_env # need write task env
 
-rospy.init_node('gym_test', anonymous=True, log_level=rospy.WARN)    
-env = gym.make('TurtleBotCrib-v0')
+rospy.init_node('env_test', anonymous=True, log_level=rospy.WARN)    
+env = gym.make('TurtlebotCrib-v0')
 
-#obs = env.reset()
-
-def pose_cb(data):
-  po = data.pose[-1].position
-  # tw = data.twist[-1]
-  print(po)
-  # print(tw)
-    
-# base_pose = rospy.Subscriber("/gazebo/model_states", ModelStates, pose_cb)
+# obs = env.reset()
 
 # rospy.spin()

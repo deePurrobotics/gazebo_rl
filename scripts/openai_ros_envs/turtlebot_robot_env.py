@@ -11,7 +11,7 @@ from geometry_msgs.msg import Twist
 
 
 
-class TurtleBotSensorEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
+class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
   """Superclass for all TurtleBot environments.
   """
 
@@ -52,10 +52,7 @@ class TurtleBotSensorEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
     self.robot_name_space = ""
 
     # We launch the init function of the Parent Class robot_gazebo_env.RobotGazeboEnv
-    super(TurtleBotEnv, self).__init__(
-      controllers_list=self.controllers_list,
-      robot_name_space=self.robot_name_space,
-      reset_controls=False,
+    super(TurtlebotRobotEnv, self).__init__(
       start_init_physics_parameters=False,
       reset_world_or_sim="WORLD"
     )
@@ -219,23 +216,20 @@ class TurtleBotSensorEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
   # because they will be used in RobotGazeboEnv GrandParentClass and defined in the
   # TrainingEnvironment.
   # ----------------------------
-  def _set_init_pose(self):
+  def _set_init(self):
     """Sets the Robot in its init pose
     """
     raise NotImplementedError()
     
-  def _init_env_variables(self):
-    """Inits variables needed to be initialised each time we reset at the start
-    of an episode.
-    """
-    raise NotImplementedError()
-
-  def _compute_reward(self, observations, done):
+  def _compute_reward(self,
+                      observations,
+                      init_position,
+                      goal_position):
     """Calculates the reward to give based on the observations given.
     """
     raise NotImplementedError()
 
-  def _set_action(self, action):
+  def _take_action(self, action):
     """Applies the given action to the simulation.
     """
     raise NotImplementedError()
@@ -243,7 +237,7 @@ class TurtleBotSensorEnv(turtlebot_gazebo_env.TurtlebotGazeboEnv):
   def _get_obs(self):
     raise NotImplementedError()
 
-  def _is_done(self, observations):
+  def _is_done(self, observations, goal_position):
     """Checks if episode done based on observations given.
     """
     raise NotImplementedError()
