@@ -22,7 +22,7 @@ import openai_ros_envs.crib_task_env
 
 if __name__ == "__main__":
   rospy.init_node("turtlebot2_crib_qlearn", anonymous=True, log_level=rospy.INFO)
-  env_name = 'TurtleBotCrib-v0'
+  env_name = 'TurtlebotCrib-v0'
   env = gym.make(env_name)
   # env.seed(0)
   rospy.loginfo("Gazebo gym environment set")

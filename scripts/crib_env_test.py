@@ -4,7 +4,6 @@ from __future__ import print_function
 import gym
 import numpy
 import time
-import qlearn
 from gym import wrappers
 # ROS packages required
 import rospy
