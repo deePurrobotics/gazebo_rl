@@ -16,6 +16,7 @@ import gym
 from gym import wrappers
 import rospy
 import numpy as np
+import matplotlib.pyplot as plt
 import utils
 
 import openai_ros_envs.crib_task_env
@@ -55,6 +56,7 @@ if __name__ == "__main__":
       Q[state, action] = Q[state, action] + Alpha*(reward + Gamma*np.max(Q[state1,:]) - Q[state, action])
       total_reward += reward
       state = state1
+      rospy.loginfo("Total reward = {}".format(total_reward))
       if done:
         break
 
@@ -62,3 +64,5 @@ if __name__ == "__main__":
 
   print("Score over time: {}".format(sum(reward_list)/num_episodes))
   print("Final Q-table: {}".format(Q))
+
+  plt.plot(reward_list)

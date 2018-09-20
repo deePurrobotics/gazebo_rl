@@ -28,9 +28,33 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     This Task Env is designed for having the TurtleBot in a walled world.
     It will learn how to move toward designated point.
     """
+    # Crib env
+    self.max_x = 5
+    self.max_y = 5
+    self.max_vx = 1
+    self.max_vy = 1
+    self.max_cosyaw = 1
+    self.max_sinyaw = 1
+    self.max_yawdot = math.pi
+
+    self.high = np.array(
+      [
+        self.max_x,
+        self.max_y,
+        self.max_vx,
+        self.max_vy,
+        self.max_cosyaw,
+        self.max_sinyaw,
+        self.max_yawdot
+      ]
+    )
+    self.low = -self.high
+    
+    self.action_space = spaces.Discrete(4)
+    self.observation_space = spaces.Box(self.low, self.high)
     # Linear and angular speed for /cmd_vel
-    self.linear_speed = 0.4 # rospy.get_param('/turtlebot2/linear_speed')
-    self.angular_speed = 0.4 # rospy.get_param('/turtlebot2/angular_speed')        
+    self.linear_speed = 0.8 # rospy.get_param('/turtlebot2/linear_speed')
+    self.angular_speed = 1 # rospy.get_param('/turtlebot2/angular_speed')        
     # Set model state service
     self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
@@ -159,7 +183,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
       rospy.loginfo("Turtlebot reached destination !!!")
     else:
       self._episode_done = False
-      rospy.loginfo("TurtleBot is working on its way to goal ...")
+      rospy.loginfo("TurtleBot is working on its way to goal @ {}...".format(self.goal_position))
 
     return self._episode_done
 
@@ -169,7 +193,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
       reward = -np.linalg.norm(obs[:2] - goal) / np.linalg.norm(init - goal)
     else:
       reward = 0
-    rospy.loginfo("reward = ".format(reward))
+    rospy.loginfo("reward = {}".format(reward))
     
     return reward
 
