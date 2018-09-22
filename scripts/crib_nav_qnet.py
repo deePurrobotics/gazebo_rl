@@ -126,8 +126,6 @@ if __name__ == "__main__":
         rospy.loginfo("Total reward = {}".format(total_reward))
         if done:
           break
-
-    
-    
-def get_explore_rate(episode):
-  return max(0.05, min(1, 1.0-math.log10((episode+1)/25.)))
+      
+  def get_explore_rate(episode):
+    return max(0.05, min(1, 1.0-math.log10((episode+1)/25.)))
