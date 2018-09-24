@@ -2,7 +2,7 @@
 
 ## Pre-requisite
 - Install [ROS-Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu), recommand Desktop-Full install.
-- **(Optional, skip this step is you install ROS in Desktop-Full mode)** Install [Gazebo-7.0](http://gazebosim.org/tutorials?tut=install_ubuntu&ver=7.0)
+- **(Optional, skip this step if you install ROS in Desktop-Full mode)** Install [Gazebo-7.0](http://gazebosim.org/tutorials?tut=install_ubuntu&ver=7.0)
 - **(Optional)** Install [openai_ros](https://bitbucket.org/theconstructcore/openai_ros.git) 
 
 ## Setup Turtlebot Gazebo Simulation Environment
