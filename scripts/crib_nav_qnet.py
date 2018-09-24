@@ -46,7 +46,7 @@ class Model:
     fc2 = tf.layers.dense(fc1, 32, activation=tf.nn.relu)
     self._logits = tf.layers.dense(fc2, self._num_actions)
     loss = tf.losses.mean_squared_error(self._q_s_a, self._logits)
-    self._optimizer = tf.train.AdamOptimizer().minimize(loss)
+    self._optimizer = tf.train.AdamOptimizer(learning_rate=0.05).minimize(loss)
     self._var_init = tf.global_variables_initializer()
 
   def predict_one(self, state, sess):
@@ -161,8 +161,8 @@ if __name__ == "__main__":
   # env.seed(0)
   rospy.loginfo("Gazebo gym environment set")
   # Set parameters
-  num_episodes = 512
-  num_steps = 1024
+  num_episodes = 128
+  num_steps = 512
   num_states = env.env.observation_space.shape[0]
   num_actions = env.env.action_space.n
   batch_size = 16
