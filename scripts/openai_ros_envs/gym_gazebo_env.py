@@ -44,7 +44,7 @@ class GymGazeboEnv(gym.Env):
       self.goal_position
     )
     done = self._is_done(obs, self.goal_position)
-    info = {}
+    info = {"goal": self.goal_position}
 
     return obs, reward, done, info
 
@@ -55,8 +55,9 @@ class GymGazeboEnv(gym.Env):
     self.gazebo.unpauseSim()
     self.gazebo.pauseSim()
     obs = self._get_obs()
+    info = {"goal": self.goal_position}
     rospy.logdebug("END Reseting RobotGazeboEnvironment")
-    return obs
+    return obs, info
 
   def close(self):
     """

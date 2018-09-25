@@ -102,7 +102,8 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     # Set goal point
     goal_x = random.uniform(-5, 5)
     goal_y = random.uniform(-5, 5)
-    while math.floor(goal_x)==math.floor(x) and math.floor(goal_y)==math.floor(y): # goal and bot should not in the same grid
+    while np.linalg.norm(np.array([goal_x, goal_y])-np.array([x, y])) <= 0.5:
+    # while int(goal_x)==int(x) and int(goal_y)==int(y): # goal and bot should not in the same grid
       goal_x = random.uniform(-5, 5)
       goal_y = random.uniform(-5, 5)
     goal_position = np.array([goal_x, goal_y])
@@ -178,7 +179,8 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     return observations
 
   def _is_done(self, obs, goal):
-    if int(obs[0])==int(goal[0]) and int(obs[1])==int(goal[1]): 
+    # if int(obs[0])==int(goal[0]) and int(obs[1])==int(goal[1]):
+    if np.linalg.norm(obs[:2]-goal) <= 0.2:
       self._episode_done = True
       rospy.loginfo("Turtlebot reached destination !!!")
     else:
@@ -189,10 +191,10 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
 
   def _compute_reward(self, obs, init, goal):
     if not self._episode_done:
-      # -(current_distance / initial_distance)
-      reward = -np.linalg.norm(obs[:2] - goal) / np.linalg.norm(init - goal)
-    else:
+      # no reward if 
       reward = 0
+    else:
+      reward = 1
     rospy.loginfo("reward = {}".format(reward))
     
     return reward

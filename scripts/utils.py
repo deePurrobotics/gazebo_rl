@@ -30,3 +30,15 @@ def obs2state(observation, low):
   state = ind_x*10 + ind_y
 
   return state
+
+def generate_action_sequence(num_sequences, horizon, num_actions):
+  """ Generate S random action sequences with H horizon
+  """
+  action_sequences = np.zeros((num_sequences, horizon, num_actions))
+  rand_i = random.randrange(num_actions)
+  for s in range(num_sequences):
+    for h in range(horizon):
+      action_sequences[s,h,rand_i] = 1
+
+  return action_sequences
+      
