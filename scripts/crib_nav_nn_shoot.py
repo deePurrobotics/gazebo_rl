@@ -20,13 +20,16 @@ import random
 import matplotlib.pyplot as plt
 
 import openai_ros_envs.crib_task_env
+import utils
 
 class Model:
   def __init__(self, num_states, num_actions, batch_size):
+    self._num_states = num_states
     self._num_inputs = num_states + num_actions
     self._batch_size = batch_size
     # define the placeholders
-    self._sa_pairs = None
+    self._stacs = None # states-actions pair
+    self._new_states = None
     # the output operations
     self._logits = None
     self._optimizer = None
@@ -35,27 +38,27 @@ class Model:
     self._define_model()
 
   def _define_model(self):
-    self._states = tf.placeholder(shape=[None, self._num_inputs], dtype=tf.float32)
+    self._stacs = tf.placeholder(shape=[None, self._num_inputs], dtype=tf.float32)
     self._new_states = tf.placeholder(shape=[None, self._num_states], dtype=tf.float32)
     # create a couple of fully connected hidden layers
-    fc1 = tf.layers.dense(self._states, 512, activation=tf.nn.relu)
-    fc2 = tf.layers.dense(fc1, 128, activation=tf.nn.relu)
+    fc1 = tf.layers.dense(self._stacs, 32, activation=tf.nn.relu)
+    fc2 = tf.layers.dense(fc1, 16, activation=tf.nn.relu)
     self._logits = tf.layers.dense(fc2, self._num_states)
     loss = tf.losses.mean_squared_error(self._new_states, self._logits)
     self._optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
     self._var_init = tf.global_variables_initializer()
 
-  def predict_one(self, stac_pair, sess):
+  def predict_one(self, stacs, sess):
     return sess.run(
       self._logits,
-      feed_dict={self._sa_pairs: sa_pair.reshape(1, self._num_inputs)}
+      feed_dict={self._stacs: stacs.reshape(1, self._num_inputs)}
     )
   
-  def predict_batch(self, states, sess):
-    return sess.run(self._logits, feed_dict={self._states: states})
+  def predict_batch(self, stacs, sess):
+    return sess.run(self._logits, feed_dict={self._stacs: stacs})
 
   def train_batch(self, sess, x_batch, y_batch):
-    sess.run(self._optimizer, feed_dict={self._states: x_batch, self._new_states: y_batch})
+    sess.run(self._optimizer, feed_dict={self._stacs: x_batch, self._new_states: y_batch})
 
 class Memory:
   def __init__(self, max_memory):
@@ -78,12 +81,9 @@ class ModelBasedController():
     self._sess = sess
     self._model = model
 
-  def train(self, memory_batch):
-    x_batch = memory_batch[0]
-    y_batch = memory_batch[-1]
+  def train(self, x_batch, y_batch):
     self._model.train_batch(self._sess, x_batch, y_batch)
 
-    
   def shoot_action(self, state, goal, num_sequences, horizon):
     action_sequences = utils.generate_action_sequence(
       num_sequences,
@@ -105,10 +105,13 @@ class ModelBasedController():
       sequence_rewards[s] = reward_in_horizon
 
     best_seq_id = np.argmax(sequence_rewards)
-    optimal_action = action_sequences[best_seq_id,0] # take first action of each sequence
+    optimal_action = int(action_sequences[best_seq_id,0][0]) # take first action of each sequence
 
     return optimal_action
 
+  def random_action(self, num_actions):
+    action = random.randrange(num_actions)
+    return action
 
 if __name__ == "__main__":
   rospy.init_node("turtlebot2_crib_qlearn", anonymous=True, log_level=rospy.INFO)
@@ -116,30 +119,39 @@ if __name__ == "__main__":
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")
   # Set parameters
-  num_episodes = 10
-  num_steps = 10
+  num_actions = env.action_space.n
+  num_states = env.observation_space.shape[0]
+  num_episodes = 64
+  num_steps = 128
+  num_sequences = 100
   horizon = 10 # number of time steps the controller considers
-  batch_size =  16
-  nn_model = Model()
+  batch_size = 16
+  nn_model = Model(num_states, num_actions, batch_size)
   memory = Memory(50000)
-  agent = ModelBasedController()
-  # Sample a bunch of random moves
-  state = env.reset()
-  for i in range(num_steps):
-    action = agent.random_action()
-    next_state, reward, done, info = self._env.step(action)
-    memory.add_sample((state, action, reward, next_state))
 
   reward_storage = []
   with tf.Session() as sess:
+    agent = ModelBasedController(sess, nn_model)
     sess.run(tf.global_variables_initializer())
+    # Sample a bunch of random moves
+    state, info = env.reset()
+    for i in range(num_steps):
+      action = agent.random_action(num_actions)
+      next_state, reward, done, info = env.step(action)
+      memory.add_sample((state, action, reward, next_state))
+    # Start Training
     for ep in range(num_episodes):
       state, info = env.reset()
       goal = info["goal"]
       total_reward = 0
       done = False
       train_samples = memory.sample(num_samples=batch_size)
-      agent.train(train_samples)
+      x_batch, y_batch = utils.sample_to_batch(
+        train_samples,
+        num_states,
+        num_actions
+      )
+      agent.train(x_batch, y_batch)
       for st in range(num_steps):
         action = agent.shoot_action(state, goal, num_sequences, horizon)
         next_state, reward, done, info = env.step(action)
@@ -153,4 +165,4 @@ if __name__ == "__main__":
 
     sess.close()
 
-  plt.plot(reward_list)
+  plt.plot(reward_storage)

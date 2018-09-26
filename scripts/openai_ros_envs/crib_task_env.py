@@ -50,11 +50,11 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     )
     self.low = -self.high
     
-    self.action_space = spaces.Discrete(4)
+    self.action_space = spaces.Discrete(2)
     self.observation_space = spaces.Box(self.low, self.high)
     # Linear and angular speed for /cmd_vel
-    self.linear_speed = 0.8 # rospy.get_param('/turtlebot2/linear_speed')
-    self.angular_speed = 1 # rospy.get_param('/turtlebot2/angular_speed')        
+    self.linear_speed = 0.4 # rospy.get_param('/turtlebot2/linear_speed')
+    self.angular_speed = 0.8 # rospy.get_param('/turtlebot2/angular_speed')        
     # Set model state service
     self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
@@ -126,7 +126,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     """
     # We construct 4 possible actions indicated by linear speed and angular speed combinations
     # We send these actions to the parent class turtlebot_robot_env
-    lin_spd_pool = [-self.linear_speed, self.linear_speed]
+    lin_spd_pool = [self.linear_speed]
     ang_spd_pool = [-self.angular_speed, self.angular_speed]
     i_l = action/len(ang_spd_pool) # index of speed in linear speed pool
     i_a = action%len(ang_spd_pool) 

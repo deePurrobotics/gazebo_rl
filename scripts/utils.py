@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 # Enable font colors
 class bcolors:
@@ -41,4 +42,17 @@ def generate_action_sequence(num_sequences, horizon, num_actions):
       action_sequences[s,h,rand_i] = 1
 
   return action_sequences
-      
+
+def sample_to_batch(samples_list, num_states, num_actions):
+  """ Create training batch from sampled memory
+  """
+  x_batch = np.zeros((len(samples_list), num_states+num_actions))
+  y_batch = np.zeros((len(samples_list), num_states))
+  for i, s in enumerate(samples_list):
+    onehot_action = np.zeros(num_actions)
+    onehot_action[s[1]] = 1
+    x_batch[i] = np.concatenate((s[0], onehot_action))
+    y_batch[i] = s[-1]
+
+  return x_batch, y_batch
+    
