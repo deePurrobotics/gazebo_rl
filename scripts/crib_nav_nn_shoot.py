@@ -135,14 +135,14 @@ if __name__ == "__main__":
     sess.run(tf.global_variables_initializer())
     # Sample a bunch of random moves
     state, info = env.reset()
-    for i in range(num_steps):
+    for i in range(num_steps*10):
       action = agent.random_action(num_actions)
       next_state, reward, done, info = env.step(action)
       memory.add_sample((state, action, reward, next_state))
     # Start Training
     for ep in range(num_episodes):
       state, info = env.reset()
-      goal = info["goal"]
+      goal = info["goal_position"]
       total_reward = 0
       done = False
       train_samples = memory.sample(num_samples=batch_size)

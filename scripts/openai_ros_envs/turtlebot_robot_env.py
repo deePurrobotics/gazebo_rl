@@ -1,16 +1,15 @@
 #! /usr/bin/env python
 
-import numpy
+from __future__ import absolute_import, division, print_function
+
+import numpy as np
 import rospy
 import gym_gazebo_env
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Image
-from sensor_msgs.msg import LaserScan
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import Image, LaserScan, PointCloud2
 from gazebo_msgs.msg import ModelStates
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
-
 
 
 class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
@@ -20,17 +19,14 @@ class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
   def __init__(self):
     """
     Initializes a new TurtleBot2Env environment.
-    Turtlebot2 doesnt use controller_manager, therefore we wont reset the 
-    controllers in the standard fashion. For the moment we wont reset them.
     
     To check any topic we need to have the simulations running, we need to do two things:
-    1) Unpause the simulation: without that th stream of data doesnt flow. This is for simulations
+    1) Unpause the simulation: without that the stream of data doesnt flow. This is for simulations
     that are pause for whatever the reason
     2) If the simulation was running already for some reason, we need to reset the controlers.
     This has to do with the fact that some plugins with tf, dont understand the reset of the simulation and need to be reseted to work properly.
     
-    The Sensors: The sensors accesible are the ones considered usefull for AI learning.
-    
+    The sensors accesible are the ones considered usefull for AI learning.
     Sensor Topic List:
     * /odom : Odometry readings of the Base of the Robot
     * /camera/depth/image_raw: 2d Depth image of the depth sensor.
@@ -38,7 +34,7 @@ class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
     * /camera/rgb/image_raw: RGB camera
     * /kobuki/laser/scan: Laser Readings
         
-    Actuators Topic List: /cmd_vel, 
+    Actuators Topic List: /mobile_base/commands/velocity, 
         
     Args:
     """
@@ -53,7 +49,7 @@ class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
     # It doesnt use namespace
     self.robot_name_space = ""
 
-    # We launch the init function of the Parent Class robot_gazebo_env.RobotGazeboEnv
+    # We launch the init function of the Parent Class gym_gazebo_env.GymGazeboEnv
     super(TurtlebotRobotEnv, self).__init__(
       start_init_physics_parameters=False,
       reset_world_or_sim="WORLD"
@@ -259,7 +255,7 @@ class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
     cmd_vel_value = Twist()
     cmd_vel_value.linear.x = linear_speed
     cmd_vel_value.angular.z = angular_speed
-    rospy.logdebug("TurtleBot2 Base Twist Cmd>>" + str(cmd_vel_value))
+    rospy.logdebug("TurtleBot2 Base Twist Cmd>>{}".format(cmd_vel_value))
     self._check_publishers_connection()
     self._cmd_vel_pub.publish(cmd_vel_value)
     self.wait_until_twist_achieved(
@@ -278,15 +274,15 @@ class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
     :param update_rate: Rate at which we check the odometry.
     :return:
     """
-    rospy.logwarn("START wait_until_twist_achieved...")    
+    rospy.logdebug("START wait_until_twist_achieved...")    
 
     rate = rospy.Rate(update_rate)
     start_wait_time = rospy.get_rostime().to_sec()
     end_wait_time = 0.0
     # epsilon = 0.05
         
-    rospy.logdebug("Desired Twist Cmd>>" + str(cmd_vel_value))
-    rospy.logdebug("epsilon>>" + str(epsilon))
+    rospy.logdebug("Desired Twist Cmd>>{}".format(cmd_vel_value))
+    rospy.logdebug("epsilon>>{}".format(epsilon))
         
     linear_speed = cmd_vel_value.linear.x
     angular_speed = cmd_vel_value.angular.z
@@ -302,21 +298,21 @@ class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
       odom_linear_vel = current_odometry.twist.twist.linear.x
       odom_angular_vel = current_odometry.twist.twist.angular.z
             
-      rospy.logdebug("Linear VEL=" + str(odom_linear_vel) + ", ?RANGE=[" + str(linear_speed_minus) + ","+str(linear_speed_plus)+"]")
-      rospy.logdebug("Angular VEL=" + str(odom_angular_vel) + ", ?RANGE=[" + str(angular_speed_minus) + ","+str(angular_speed_plus)+"]")
+      rospy.logdebug("Linear VEL={}, ?RANGE=[{}, {}]".format(odom_linear_vel, linear_speed_minus, linear_speed_plus))
+      rospy.logdebug("Angular VEL={}, ?RANGE=[{}, {}]".format(odom_angular_vel, angular_speed_minus, angular_speed_plus))
             
       linear_vel_are_close = (odom_linear_vel <= linear_speed_plus) and (odom_linear_vel > linear_speed_minus)
       angular_vel_are_close = (odom_angular_vel <= angular_speed_plus) and (odom_angular_vel > angular_speed_minus)
             
       if linear_vel_are_close and angular_vel_are_close:
-        rospy.logwarn("Reached Velocity!")
+        rospy.logdebug("Reached Velocity!")
         end_wait_time = rospy.get_rostime().to_sec()
         break
       elif rospy.get_rostime().to_sec() - start_wait_time > 0.5:
-        rospy.logwarn("Wall! Cannot reach desired velocity...")
+        rospy.logdebug("Wall! Cannot reach desired velocity...")
         end_wait_time = rospy.get_rostime().to_sec()
         break
-      rospy.logwarn("Not there yet, keep waiting...")
+      rospy.logdebug("Not there yet, keep waiting...")
       rate.sleep()
     delta_time = end_wait_time- start_wait_time
     rospy.logdebug("[Wait Time=" + str(delta_time)+"]")    

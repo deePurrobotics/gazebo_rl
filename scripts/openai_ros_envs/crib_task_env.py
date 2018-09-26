@@ -56,7 +56,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     self.init_position = np.zeros(2)
     self.goal_position = np.zeros(2)
     # Linear and angular speed for /cmd_vel
-    self.linear_speed = 0.4 # rospy.get_param('/turtlebot2/linear_speed')
+    self.linear_speed = 0.2 # rospy.get_param('/turtlebot2/linear_speed')
     self.angular_speed = 0.8 # rospy.get_param('/turtlebot2/angular_speed')        
     # Set model state service
     self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
