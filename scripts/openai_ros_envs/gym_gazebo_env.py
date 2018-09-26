@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import numpy as np
 import rospy
 import gym # https://github.com/openai/gym/blob/master/gym/core.py
@@ -15,8 +17,6 @@ class GymGazeboEnv(gym.Env):
     self.seed()
 
     # Set up ROS related variables
-    self.init_position = [0, 0]
-    self.goal_position = [0, 0]
     self.reward_pub = rospy.Publisher('/openai/reward', RLExperimentInfo, queue_size=1)
     rospy.logdebug("END init RobotGazeboEnv")
 

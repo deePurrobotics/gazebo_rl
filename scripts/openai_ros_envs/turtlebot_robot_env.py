@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import numpy
 import rospy
 import gym_gazebo_env

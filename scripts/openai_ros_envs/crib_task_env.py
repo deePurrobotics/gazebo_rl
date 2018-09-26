@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 from __future__ import print_function
 
 import rospy
@@ -36,7 +37,6 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     self.max_cosyaw = 1
     self.max_sinyaw = 1
     self.max_yawdot = math.pi
-
     self.high = np.array(
       [
         self.max_x,
@@ -49,9 +49,12 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
       ]
     )
     self.low = -self.high
-    
     self.action_space = spaces.Discrete(2)
     self.observation_space = spaces.Box(self.low, self.high)
+    self.info = {}
+    # robot initial position and goal position
+    self.init_position = np.zeros(2)
+    self.goal_position = np.zeros(2)
     # Linear and angular speed for /cmd_vel
     self.linear_speed = 0.4 # rospy.get_param('/turtlebot2/linear_speed')
     self.angular_speed = 0.8 # rospy.get_param('/turtlebot2/angular_speed')        
@@ -68,13 +71,14 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     2. Set a goal point inside crib for turtlebot to navigate towards
     
     Returns: 
-      init_position: [x, y] 
-      goal_position: [x, y]
+      init_position: array([x, y]) 
+      goal_position: array([x, y])
       
     """
     # Set turtlebot inside crib, away from crib edges
-    x = random.uniform(-4, 4)
-    y = random.uniform(-4, 4)
+    x = random.uniform(self.low[0]+1, self.high[0]-1)
+    y = random.uniform(self.low[1]+1, self.high[1]-1)
+    self.init_position = np.array([x, y])
     w = random.uniform(-math.pi, math.pi)    
     model_state = ModelState()
     model_state.model_name = "mobile_base"
@@ -85,36 +89,30 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     model_state.pose.orientation.y = 0
     model_state.pose.orientation.z = 1
     model_state.pose.orientation.w = w
-    model_state.twist.linear.x = 0.0
-    model_state.twist.linear.y = 0
-    model_state.twist.linear.z = 0
-    model_state.twist.angular.x = 0.0
-    model_state.twist.angular.y = 0
-    model_state.twist.angular.z = 0.0
     model_state.reference_frame = "world"
     rospy.wait_for_service('/gazebo/set_model_state')
     try:
       self.set_model_state(model_state)
     except rospy.ServiceException as e:
       rospy.logerr("/gazebo/pause_physics service call failed")
-    rospy.logdebug("Turtlebot was set @ {}".format(model_state))
+    rospy.logdebug("Turtlebot was initiated as {}".format(model_state))
 
     # Set goal point
-    goal_x = random.uniform(-5, 5)
-    goal_y = random.uniform(-5, 5)
-    while np.linalg.norm(np.array([goal_x, goal_y])-np.array([x, y])) <= 0.5:
+    goal_x = random.uniform(self.low[0]+.5, self.high[0]-.5)
+    goal_y = random.uniform(self.low[1]+.5, self.high[1]-.5)
+    self.goal_position = np.array([goal_x, goal_y])
+    while np.linalg.norm(self.goal_position - self.init_position) <= 0.5:
     # while int(goal_x)==int(x) and int(goal_y)==int(y): # goal and bot should not in the same grid
-      goal_x = random.uniform(-5, 5)
-      goal_y = random.uniform(-5, 5)
-    goal_position = np.array([goal_x, goal_y])
-    rospy.logwarn("Goal point was set @ {}".format(goal_position))
-    init_position = np.array([x, y])
-
+      goal_x = random.uniform(self.low[0]+.5, self.high[0]-.5)
+      goal_y = random.uniform(self.low[1]+.5, self.high[1]-.5)
+    self.goal_position = np.array([goal_x, goal_y])
+    rospy.logdebug("Goal point was set @ {}".format(self.goal_position))
+    # Episode cannot done
     self._episode_done = False
     # Give the system a little time to finish initialization
     time.sleep(0.2)
     
-    return init_position, goal_position
+    return self.init_position, self.goal_position
 
   def _take_action(self, action):
     """
@@ -124,7 +122,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     Args:
       action: The action integer that sets what movement to do next.
     """
-    # We construct 4 possible actions indicated by linear speed and angular speed combinations
+    # We construct 2 possible actions indicated by linear speed and angular speed combinations
     # We send these actions to the parent class turtlebot_robot_env
     lin_spd_pool = [self.linear_speed]
     ang_spd_pool = [-self.angular_speed, self.angular_speed]
@@ -175,17 +173,27 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     yaw_dot = model_states.twist[-1].angular.z
         
     observations = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
-    rospy.loginfo("Observations==>"+str(observations))
+    rospy.logdebug("Observations ==> {}".format(observations))
     return observations
 
+  def _get_info(self):
+    """
+    Return robot's initial position and goal position 
+    """
+    self.info = {
+      "init_position": self.init_position,
+      "goal_position": self.goal_position
+    }
+
+    return self.info
+
   def _is_done(self, obs, goal):
-    # if int(obs[0])==int(goal[0]) and int(obs[1])==int(goal[1]):
-    if np.linalg.norm(obs[:2]-goal) <= 0.2:
+    if np.linalg.norm(obs[:2]-goal) <= 0.2: # reaching goal position
       self._episode_done = True
-      rospy.loginfo("Turtlebot reached destination !!!")
+      rospy.logdebug("Turtlebot reached destination !!!")
     else:
       self._episode_done = False
-      rospy.loginfo("TurtleBot is working on its way to goal @ {}...".format(self.goal_position))
+      rospy.logdebug("TurtleBot is working on its way to goal @ {}...".format(self.goal_position))
 
     return self._episode_done
 
@@ -195,7 +203,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
       reward = 0
     else:
       reward = 1
-    rospy.loginfo("reward = {}".format(reward))
+    rospy.logdebug("reward = {}".format(reward))
     
     return reward
 
