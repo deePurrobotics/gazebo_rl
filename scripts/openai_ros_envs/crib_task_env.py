@@ -140,7 +140,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     )
     rospy.logdebug("END Set Action ==>"+str(action))
 
-  def _get_obs(self):
+  def _observe(self):
     """
     Here we define states as gazebo model_states
     :return:

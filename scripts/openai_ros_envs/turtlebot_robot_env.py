@@ -234,7 +234,7 @@ class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
     """
     raise NotImplementedError()
 
-  def _get_obs(self):
+  def _observe(self):
     raise NotImplementedError()
 
   def _is_done(self, observations, goal_position):
