@@ -1,12 +1,8 @@
-#! /usr/bin/env python
-
 import numpy as np
 import rospy
 import gym # https://github.com/openai/gym/blob/master/gym/core.py
 from gym.utils import seeding
 from gazebo_connection import GazeboConnection
-from openai_ros.msg import RLExperimentInfo #https://bitbucket.org/theconstructcore/theconstruct_msgs/src/master/msg/RLExperimentInfo.msg
-
 
 class GymGazeboEnv(gym.Env):
 
@@ -15,9 +11,6 @@ class GymGazeboEnv(gym.Env):
     rospy.logdebug("START init RobotGazeboEnv")
     self.gazebo = GazeboConnection(start_init_physics_parameters,reset_world_or_sim)
     self.seed()
-
-    # Set up ROS related variables
-    self.reward_pub = rospy.Publisher('/openai/reward', RLExperimentInfo, queue_size=1)
     rospy.logdebug("END init RobotGazeboEnv")
 
   # Env methods
