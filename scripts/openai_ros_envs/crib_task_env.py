@@ -7,7 +7,7 @@ import math
 import random
 import tf
 from gym import spaces
-import turtlebot_robot_env
+from .turtlebot_robot_env import TurtlebotRobotEnv
 from gym.envs.registration import register
 
 from gazebo_msgs.msg import *
@@ -31,8 +31,8 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     # Crib env
     self.max_x = 5
     self.max_y = 5
-    self.max_vx = 1
-    self.max_vy = 1
+    self.max_vx = 2
+    self.max_vy = 2
     self.max_cosyaw = 1
     self.max_sinyaw = 1
     self.max_yawdot = math.pi
@@ -55,8 +55,8 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     self.init_position = np.zeros(2)
     self.goal_position = np.zeros(2)
     # Linear and angular speed for /cmd_vel
-    self.linear_speed = 0.2 # rospy.get_param('/turtlebot2/linear_speed')
-    self.angular_speed = 0.8 # rospy.get_param('/turtlebot2/angular_speed')        
+    self.linear_speed = 0.4 # rospy.get_param('/turtlebot2/linear_speed')
+    self.angular_speed = 1 # rospy.get_param('/turtlebot2/angular_speed')        
     # Set model state service
     self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False

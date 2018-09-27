@@ -114,7 +114,7 @@ class ModelBasedController():
     return action
 
 if __name__ == "__main__":
-  rospy.init_node("turtlebot2_crib_qlearn", anonymous=True, log_level=rospy.INFO)
+  rospy.init_node("turtlebot2_crib_mpc", anonymous=True, log_level=rospy.INFO)
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")

@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import rospy
-import gym_gazebo_env
+from .gym_gazebo_env import GymGazeboEnv
 from std_msgs.msg import Float64
 from sensor_msgs.msg import Image, LaserScan, PointCloud2
 from gazebo_msgs.msg import ModelStates
@@ -10,7 +10,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 
 
-class TurtlebotRobotEnv(gym_gazebo_env.GymGazeboEnv):
+class TurtlebotRobotEnv(GymGazeboEnv):
   """Superclass for all TurtleBot environments.
   """
 

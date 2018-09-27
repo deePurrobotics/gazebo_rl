@@ -2,7 +2,7 @@ import numpy as np
 import rospy
 import gym # https://github.com/openai/gym/blob/master/gym/core.py
 from gym.utils import seeding
-from gazebo_connection import GazeboConnection
+from .gazebo_connection import GazeboConnection
 
 class GymGazeboEnv(gym.Env):
 
