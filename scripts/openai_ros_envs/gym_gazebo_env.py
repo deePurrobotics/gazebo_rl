@@ -27,7 +27,7 @@ class GymGazeboEnv(gym.Env):
 
   def step(self, action):
     """
-      obs, reward, done, info = env.step(action)
+    obs, reward, done, info = env.step(action)
     """
     # Convert the action num to movement action
     self.gazebo.unpauseSim()
@@ -46,7 +46,7 @@ class GymGazeboEnv(gym.Env):
 
   def reset(self):
     """ 
-      obs, info = env.reset() 
+    obs, info = env.reset() 
     """
     rospy.logdebug("Reseting RobotGazeboEnvironment")
     self._reset_sim()
@@ -57,7 +57,7 @@ class GymGazeboEnv(gym.Env):
     info = self._get_info()
     rospy.logdebug("END Reseting RobotGazeboEnvironment")
     return obs, info
-
+  
   def close(self):
     """
     Function executed when closing the environment.

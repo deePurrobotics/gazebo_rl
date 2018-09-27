@@ -49,7 +49,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
       ]
     )
     self.low = -self.high
-    self.action_space = spaces.Discrete(2)
+    self.action_space = spaces.Discrete(4)
     self.observation_space = spaces.Box(self.low, self.high)
     self.info = {}
     # robot initial position and goal position
@@ -122,9 +122,9 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     Args:
       action: The action integer that sets what movement to do next.
     """
-    # We construct 2 possible actions indicated by linear speed and angular speed combinations
+    # We construct 4 possible actions indicated by linear speed and angular speed combinations
     # We send these actions to the parent class turtlebot_robot_env
-    lin_spd_pool = [self.linear_speed]
+    lin_spd_pool = [-self.linear_speed, self.linear_speed]
     ang_spd_pool = [-self.angular_speed, self.angular_speed]
     i_l = action/len(ang_spd_pool) # index of speed in linear speed pool
     i_a = action%len(ang_spd_pool) 
