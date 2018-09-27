@@ -55,4 +55,4 @@ def sample_to_batch(samples_list, num_states, num_actions):
     y_batch[i] = s[-1]
 
   return x_batch, y_batch
-    
+

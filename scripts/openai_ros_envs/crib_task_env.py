@@ -22,7 +22,7 @@ register(
 )
 
 
-class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
+class CribTaskEnv(TurtlebotRobotEnv):
   def __init__(self):
     """
     This Task Env is designed for having the TurtleBot in a walled world.
@@ -53,6 +53,8 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     self.info = {}
     # robot initial position and goal position
     self.init_position = np.zeros(2)
+    self.current_position = np.zeros(2)
+    self.previous_position = np.zeros(2)
     self.goal_position = np.zeros(2)
     # Linear and angular speed for /cmd_vel
     self.linear_speed = 0.4 # rospy.get_param('/turtlebot2/linear_speed')
@@ -78,6 +80,8 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     x = random.uniform(self.low[0]+1, self.high[0]-1)
     y = random.uniform(self.low[1]+1, self.high[1]-1)
     self.init_position = np.array([x, y])
+    self.previous_position = self.init_position
+    self.current_position = self.init_position
     w = random.uniform(-math.pi, math.pi)    
     model_state = ModelState()
     model_state.model_name = "mobile_base"
@@ -121,6 +125,8 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     Args:
       action: The action integer that sets what movement to do next.
     """
+    # Update bot previous position
+    self.previous_position = self.current_position    
     # We construct 4 possible actions indicated by linear speed and angular speed combinations
     # We send these actions to the parent class turtlebot_robot_env
     lin_spd_pool = [-self.linear_speed, self.linear_speed]
@@ -158,6 +164,7 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     rospy.logdebug("Turtlebot is @ state of {}".format(model_states))
     x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
     y = model_states.pose[-1].position.y
+    self.current_position = np.array([x, y])
     v_x = model_states.twist[-1].linear.x
     v_y = model_states.twist[-1].linear.y
     quat = (
@@ -181,7 +188,9 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
     """
     self.info = {
       "init_position": self.init_position,
-      "goal_position": self.goal_position
+      "goal_position": self.goal_position,
+      "current_position": self.current_position,
+      "previous_position": self.previous_position
     }
 
     return self.info
@@ -196,12 +205,15 @@ class CribTaskEnv(turtlebot_robot_env.TurtlebotRobotEnv):
 
     return self._episode_done
 
-  def _compute_reward(self, obs, init, goal):
+  def _compute_reward(self):
     if not self._episode_done:
-      # no reward if 
-      reward = 0
+      if np.linalg.norm(self.current_position-self.goal_position) \
+     < np.linalg.norm(self.previous_position-self.goal_position): # if move closer
+        reward = 1
+      else:
+        reward = 0
     else:
-      reward = 1
+      reward = 1 / np.linalg.norm(self.goal_position-self.init_position)
     rospy.logdebug("reward = {}".format(reward))
     
     return reward

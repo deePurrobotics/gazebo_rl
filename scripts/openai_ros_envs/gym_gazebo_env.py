@@ -27,11 +27,7 @@ class GymGazeboEnv(gym.Env):
     self._take_action(action)
     self.gazebo.pauseSim()
     obs = self._observe()
-    reward = self._compute_reward(
-      obs,
-      self.init_position,
-      self.goal_position
-    )
+    reward = self._compute_reward()
     done = self._is_done(obs, self.goal_position)
     info = self._get_info() # {"goal": self.goal_position}
 
@@ -100,10 +96,7 @@ class GymGazeboEnv(gym.Env):
     """
     raise NotImplementedError()
 
-  def _compute_reward(self,
-                      observations,
-                      init_position,
-                      goal_position):
+  def _compute_reward(self):
     """Calculates the reward to give based on the observations given.
     """
     raise NotImplementedError()

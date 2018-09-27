@@ -93,15 +93,19 @@ class ModelBasedController():
     sequence_rewards = np.zeros(num_sequences)
     # Compute reward for every sequence 
     for s in range(action_sequences.shape[0]):
+      old_state = np.array(state)
+      print("old_state = {}".format(old_state)) # debug
       reward_in_horizon = 0
       for h in range(horizon):
         stac_pair = np.concatenate((state, action_sequences[s,h]))
-        new_state = self._model.predict_one(stac_pair, self._sess)
-        if np.linalg.norm(state[:2]-goal) <= 0.2:
+        new_state = np.array(self._model.predict_one(stac_pair, self._sess))[0]
+        print("new_state = {}".format(new_state)) # debug
+        if np.linalg.norm(new_state[:2]-goal) < np.linalg.norm(old_state[:2]-goal):
           reward = 1
         else:
           reward = 0
         reward_in_horizon += reward
+        old_state = new_state
       sequence_rewards[s] = reward_in_horizon
 
     best_seq_id = np.argmax(sequence_rewards)
@@ -114,7 +118,7 @@ class ModelBasedController():
     return action
 
 if __name__ == "__main__":
-  rospy.init_node("turtlebot2_crib_mpc", anonymous=True, log_level=rospy.INFO)
+  rospy.init_node("turtlebot2_crib_mpc", anonymous=True, log_level=rospy.DEBUG)
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")
@@ -125,20 +129,25 @@ if __name__ == "__main__":
   num_steps = 128
   num_sequences = 100
   horizon = 10 # number of time steps the controller considers
-  batch_size = 16
+  batch_size = 64
   nn_model = Model(num_states, num_actions, batch_size)
-  memory = Memory(50000)
+  memory = Memory(100000)
 
   reward_storage = []
   with tf.Session() as sess:
     agent = ModelBasedController(sess, nn_model)
     sess.run(tf.global_variables_initializer())
     # Sample a bunch of random moves
-    state, info = env.reset()
-    for i in range(num_steps*10):
-      action = agent.random_action(num_actions)
-      next_state, reward, done, info = env.step(action)
-      memory.add_sample((state, action, reward, next_state))
+    rospy.logdebug("Initial random sampling start...")
+    for i in range(2):
+      state, info = env.reset()
+      for j in range(10):
+        if j%100 == 0:
+          rospy.logdebug("Initial random sampling in ep.{}, step{}".format(i+1,j+1))
+        action = agent.random_action(num_actions)
+        next_state, reward, done, info = env.step(action)
+        memory.add_sample((state, action, reward, next_state))
+    rospy.logdebug("Initial random sampling finished.")
     # Start Training
     for ep in range(num_episodes):
       state, info = env.reset()
