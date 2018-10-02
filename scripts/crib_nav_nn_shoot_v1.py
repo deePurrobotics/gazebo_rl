@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import tensorflow as tf
+import tensorflow.contrib.eager as tfe
 import gym
 import rospy
 import random
@@ -22,51 +23,33 @@ import matplotlib.pyplot as plt
 import openai_ros_envs.crib_task_env
 import utils
 
-def model(graph, input_tensor, num_outputs):
-  """Create the model which consists of
-  a bidirectional rnn (GRU(10)) followed by a dense classifier
+tf.enable_eager_execution()
 
-  Args:
-    graph (tf.Graph): Tensors' graph
-    input_tensor (tf.Tensor): Tensor fed as input to the model
 
-  Returns:
-    tf.Tensor: the model's output layer Tensor
-  """
-  cell = tf.nn.rnn_cell.GRUCell(10)
-  with graph.as_default():
-    fc1 = tf.layers.dense(input_tensor, 32, activation=tf.nn.relu)
-    fc2 = tf.layers.dense(input_tensor, 16, activation=tf.nn.relu)
-    logits = tf.layers.dense(fc2, num_outputs)
+class Model(tf.keras.Model):
+  def __init__(self):
+    super(Model, self).__init__()
+    self._input_shape = []
+    self.dense1 = tf.keras.layers.Dense(units=32, activation=tf.nn.relu)
+    self.dense2 = tf.keras.layers.Dense(units=16, activation=tf.nn.relu)
+    self.dense3 = tf.keras.layers.Dense(units=7)
 
-    return logits
+  def call(self, input):
+    """Run the model."""
+    fc1 = self.dense1(input)
+    fc2 = self.dense2(result)
+    output = self.dense2(result)  # reuse variables from dense2 layer
+    return output
+  
+def loss(model, x, y):
+  y_ = model(x)
+  return tf.losses.mean_squared_error(labels=y, predictions=y_)
 
-def optimize_op(graph, logits, labels_tensor):
-  """Create optimization operation from model's logits and labels
+def grad(model, inputs, targets):
+  with tf.GradientTape() as tape:
+    loss_value = loss(model, inputs, targets)
+  return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
-  Args:
-    graph (tf.Graph): Tensors' graph
-    logits (tf.Tensor): The model's output without activation
-    labels_tensor (tf.Tensor): Target labels
-
-  Returns:
-    tf.Operation: the operation performing a stem of Adam optimizer
-  """
-  with graph.as_default():
-    with tf.variable_scope('loss'):
-      loss = tf.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(
-          logits=logits,
-          labels=labels_tensor,
-          name='xent'
-        ),
-        name="mean-xent"
-      )
-    with tf.variable_scope('optimizer'):
-      opt_op = tf.train.AdamOptimizer(1e-2).minimize(loss)
-
-    return opt_op
-    
 if __name__ == "__main__":
   # init node
   rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.DEBUG)
@@ -77,62 +60,93 @@ if __name__ == "__main__":
   # set parameters
   num_actions = env.action_space.n
   num_states = env.observation_space.shape[0]
-  num_episodes = 64
-  num_steps = 128
+  num_episodes = 4
+  num_steps = 8
   num_sequences = 100
   horizon = 10 # number of time steps the controller considers
-  batch_size = 128
+  batch_size = 64
   
-  # random samples features and labels
-  features = np.zeros((65536, 8))
-  labels = np.zeros((65536, 7))
-  i = 0
-  for _ in range(2048):
-    state, _ = env.reset()
-    for _ in range(32):
-      action = random.randrange(num_actions)
-      next_state, reward, done, _ = env.step(action)
-      features[i] = np.concatenate((state, np.array([action])))
-      labels[i] = next_state
-      state = next_state
-  # create graph
-  graph = tf.Graph()
-  with graph.as_default():
-    # define placeholders
-    batch_size_ph = tf.placeholder(dtype=tf.int64, name="batch_size_ph")
-    features_data_ph = tf.placeholder(
-      dtype=tf.float32,
-      shape=[None, 8],
-      name="features_data_ph"
-    )
-    labels_data_ph = tf.placeholder(
-      dtype=tf.float32,
-      shape=[None, 7],
-      name='labels_data_ph'
-    )
-    # dataset
-    dataset = tf.data.Dataset.from_tensor_slices((features_data_ph, labels_data_ph))
-    dataset = dataset.batch(batch_size_ph)
-    iterator = tf.data.Iterator.from_structure(dataset.output_types, dataset.output_shapes)
-    dataset_init_op = iterator.make_initializer(dataset, name='dataset_init')
-    input_tensor, labels_tensor = iterator.get_next()
-    # nn-model and optimizer_op
-    logits = model(graph, input_tensor, num_states)
-    opt_op = optimize_op(graph, logits, labels_tensor)
+  stacs_memory = []
+  nextstates_memory = []
+  # setup model
+  # model = Model()
+  model = tf.keras.Sequential([
+    tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(num_states+1,)),  # input shape required
+    tf.keras.layers.Dense(16, activation=tf.nn.relu),
+    tf.keras.layers.Dense(num_states)
+  ])
+  # set training parameters
+  num_epoch = 21
 
-    with tf.Session(graph=graph) as sess:
-      # initialize variables
-      tf.global_variables_initializer().run(session=sess)
-      # train on random samples
-      for epoch in range(64):
-        batch = 0
-        # initialize dataset
-        sess.run(
-          dataset_init_op,
-          feed_dict={
-            features_data_ph: features,
-            labels_data_ph: labels,
-            batch_size: batch_size
-          }
-        )
-        value = []
+  # Random Sampling, 8 samples
+  for _ in range(4):
+    state, _ = env.reset()
+    for _ in range(8):
+      action = random.randrange(num_actions)
+      next_state, _, _, _ = env.step(action)
+      stac = np.concatenate((state, np.array([action])))
+      stacs_memory.append(stac)
+      nextstates_memory.append(next_state)
+      state = next_state
+  # Train random sampled dataset
+  dataset = utils.create_dataset(
+    np.array(stacs_memory),
+    np.array(nextstates_memory),
+    batch_size=4
+  )
+  features, labels = next(iter(dataset))
+  optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+  global_step = tf.train.get_or_create_global_step()
+  loss_value, grads = grad(
+    model,
+    np.array(stacs_memory),
+    np.array(nextstates_memory)
+  )
+  for epoch in range(num_epoch):
+    epoch_loss_avg = tfe.metrics.Mean()
+    for x, y in dataset:
+      # optimize model
+      loss_value, grads = grad(model, x, y)
+      optimizer.apply_gradients(
+        zip(grads, model.variables),
+        global_step
+      )
+      # track progress
+      epoch_loss_avg(loss_value)  # add current batch loss
+  # log training
+  if epoch % 10 == 0:
+    print("Epoch {:03d}: Loss: {:.3f}".format(epoch, epoch_loss_avg.result()))
+
+  # # Control with more samples
+  # for episode in range(num_episodes):
+  #   state, info = env.reset()
+  #   goal = info["goal_position"]
+  #   total_reward = 0
+  #   done = False
+  #   dataset = utils.create_dataset(
+  #     np.array(stacs_memory),
+  #     np.array(nextstates_memory),
+  #     batch_size
+  #   )
+  #   # train one epoch with newly collected samples
+  #   for x, y in dataset:
+  #     loss_value, grads = grad(model, x, y)
+  #     optimizer.apply_gradients(
+  #       zip(grads, model.variables),
+  #       global_step
+  #     )
+  #     print("Loss: {:3f}".format(loss_value))
+  #   # compute control policies as long as sampling more
+  #   for step in range(num_steps):
+  #     action = utils.shoot_action(model, state, goal, num_sequences, horizon)
+  #     next_state, reward, done, info = env.step(action)
+  #     stac = np.concatenate((state, np.array([action])))
+  #     stacs_memory.append(stac)
+  #     nextstates_memory.append(next_state)
+  #     total_reward += reward
+  #     state = next_state
+  #     print("Total reward: {:.4f}".format(total_reward))
+  #     if done:
+  #       break
+  #   reward_storage.append(total_reward)
+

@@ -148,6 +148,8 @@ if __name__ == "__main__":
         next_state, reward, done, info = env.step(action)
         memory.add_sample((state, action, reward, next_state))
     rospy.logdebug("Initial random sampling finished.")
+    # Training based on initial memory
+    agent.train()
     # Start Training
     for ep in range(num_episodes):
       state, info = env.reset()

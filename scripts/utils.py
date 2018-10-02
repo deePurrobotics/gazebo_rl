@@ -1,4 +1,7 @@
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
+import tensorflow as tf
 import random
 
 # Enable font colors
@@ -56,3 +59,11 @@ def sample_to_batch(samples_list, num_states, num_actions):
 
   return x_batch, y_batch
 
+def create_dataset(input_features, output_labels, batch_size):
+  """ Create TF dataset from numpy arrays
+  """
+  dataset = tf.data.Dataset.from_tensor_slices((input_features, output_labels))
+  dataset = dataset.shuffle(buffer_size = 10000)
+  dataset = dataset.batch(batch_size)
+
+  return dataset
