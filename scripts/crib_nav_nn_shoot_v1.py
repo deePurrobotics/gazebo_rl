@@ -76,7 +76,7 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(num_states)
   ])
   # set training parameters
-  num_epoch = 21
+  num_epochs = 21
 
   # Random Sampling, 8 samples
   for _ in range(4):
@@ -84,17 +84,17 @@ if __name__ == "__main__":
     for _ in range(8):
       action = random.randrange(num_actions)
       next_state, _, _, _ = env.step(action)
-      stac = np.concatenate((state, np.array([action])))
+      stac = np.concatenate((state, np.array([action]))).astype(np.float32)
       stacs_memory.append(stac)
-      nextstates_memory.append(next_state)
+      nextstates_memory.append(next_state.astype(np.float32))
       state = next_state
   # Train random sampled dataset
   dataset = utils.create_dataset(
-    np.array(stacs_memory),
-    np.array(nextstates_memory),
+    input_features=np.array(stacs_memory),
+    output_labels=np.array(nextstates_memory),
     batch_size=4
   )
-  features, labels = next(iter(dataset))
+  # features, labels = next(iter(dataset))
   optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
   global_step = tf.train.get_or_create_global_step()
   loss_value, grads = grad(
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     np.array(stacs_memory),
     np.array(nextstates_memory)
   )
-  for epoch in range(num_epoch):
+  for epoch in range(num_epochs):
     epoch_loss_avg = tfe.metrics.Mean()
     for x, y in dataset:
       # optimize model
