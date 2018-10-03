@@ -35,14 +35,13 @@ def obs2state(observation, low):
 
   return state
 
-def generate_action_sequence(num_sequences, horizon, num_actions):
+def generate_action_sequence(num_sequences, len_horizon, num_actions):
   """ Generate S random action sequences with H horizon
   """
-  action_sequences = np.zeros((num_sequences, horizon, num_actions))
-  rand_i = random.randrange(num_actions)
+  action_sequences = np.zeros((num_sequences, len_horizon))
   for s in range(num_sequences):
-    for h in range(horizon):
-      action_sequences[s,h,rand_i] = 1
+    for h in range(len_horizon):
+      action_sequences[s,h] = random.randrange(num_actions)
 
   return action_sequences
 
@@ -70,24 +69,21 @@ def create_dataset(input_features, output_labels, batch_size, shuffle=True, num_
 
   return dataset
   
-def shoot_action(model, state, goal, num_sequences, horizon):
+def shoot_action(model, action_sequences, state, goal):
   """ Find an action with most reward using random shoot
   """
-  action_sequences = generate_action_sequence(
-    num_sequences,
-    horizon_len,
-  ) # (s,h) array
-  sequence_rewards = np.zeros(num_sequences)
+  sequence_rewards = np.zeros(action_sequences.shape[0])
   # Compute reward for every sequence 
-  for seq in range(num_sequences):
-    old_state = np.array(state).astype(np.float32)
-    print("old_state = {:.4f}".format(old_state)) # debug
+  for seq in range(action_sequences.shape[0]):
+    old_state = np.array(state).reshape(1,-1).astype(np.float32)
+    # print("old_state: {}".format(old_state)) # debug
     reward_in_horizon = 0
-    for hor in range(horizon_len):
-      stac = np.concatenate((old_state, [action_sequences[seq,hor]])).astype(np.float32) # state-action
-      new_state = model(stac_pair)
-      print("new_state = {}".format(new_state)) # debug
-      if np.linalg.norm(new_state[:2]-goal) < np.linalg.norm(old_state[:2]-goal):
+    for hor in range(action_sequences.shape[1]):
+      action = np.array([[action_sequences[seq,hor]]])
+      stac = np.concatenate((old_state, action), axis=1).astype(np.float32) # state-action pair
+      new_state = model(stac)
+      # print("new_state: {}".format(new_state)) # debug
+      if np.linalg.norm(new_state[0,:2]-goal) < np.linalg.norm(old_state[0,:2]-goal):
         reward = 1
       else:
         reward = 0

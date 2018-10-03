@@ -5,43 +5,32 @@ import tensorflow as tf
 import gym
 import rospy
 import random
+import os
+import datetime
 
 import openai_ros_envs.crib_task_env
 
-rospy.init_node("dataset_test", anonymous=True, log_level=rospy.DEBUG)
-env_name = "TurtlebotCrib-v0"
-env = gym.make(env_name)
-rospy.loginfo("Gazebo gym environment set")
-# Set parameters
-num_actions = env.action_space.n
-num_states = env.observation_space.shape[0]
-num_episodes = 64
-num_steps = 128
-num_sequences = 100
-horizon = 10 # number of time steps the controller considers
-batch_size = 64
-mem = {"pre_state": [], "action": [], "reward": [], "new_state": []}
+tf.enable_eager_execution()
 
-with tf.Session() as sess:
-  sess.run(tf.global_variables_initializer())
-  # Sample a bunch of random moves
-  rospy.logdebug("Initial random sampling start...")
-  for i in range(2):
-    state, info = env.reset()
-    for j in range(10):
-      if j%100 == 0:
-        rospy.logdebug("Initial random sampling in ep.{}, step{}".format(i+1,j+1))
-      action = random.randrange(num_actions)
-      next_state, reward, done, info = env.step(action)
-      mem["pre_state"].append(state)
-      mem["action"].append(action)
-      mem["reward"].append(reward)
-      mem["new_state"].append(next_state)
-      
-      state = next_state
-    rospy.logdebug("Initial random sampling finished.")
+model = tf.keras.Sequential([
+  tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(8,)),  # input shape required
+  tf.keras.layers.Dense(16, activation=tf.nn.relu),
+  tf.keras.layers.Dense(7)
+])
 
-  features = np.concatenate((np.array(mem["pre_state"]), np.array([mem["action"]]).T), axis=1)
-  labels = np.array(mem["new_state"])
-  dataset = tf.data.Dataset.from_tensor_slices((features, labels))
-  
+
+model_dir = "/home/linzhank/ros_ws/src/turtlebot_rl/scripts/"
+today = datetime.datetime.today().strftime("%Y%m%d")
+checkpoint_dir = os.path.join(model_dir, today)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+
+root = tf.train.Checkpoint(optimizer=optimizer,
+                           model=model,
+                           optimizer_step=tf.train.get_or_create_global_step())
+root.restore(tf.train.latest_checkpoint(checkpoint_dir))
+
+a = np.array([[random.randrange(4)]])
+s = np.random.randn(1,7)
+sa = np.concatenate((s,a),axis=1).astype(np.float32)
+
+s = model(sa)
