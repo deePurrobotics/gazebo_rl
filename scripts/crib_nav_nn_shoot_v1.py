@@ -26,9 +26,9 @@ import utils
 tf.enable_eager_execution()
 
 
-class Model(tf.keras.Model):
+class DenseModel(tf.keras.Model):
   def __init__(self):
-    super(Model, self).__init__()
+    super(DenseModel, self).__init__()
     self._input_shape = []
     self.dense1 = tf.keras.layers.Dense(units=32, activation=tf.nn.relu)
     self.dense2 = tf.keras.layers.Dense(units=16, activation=tf.nn.relu)
