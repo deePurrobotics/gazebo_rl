@@ -76,7 +76,7 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(num_states)
   ])
   # set training parameters
-  num_epochs = 21
+  num_epochs = 4
 
   # Random Sampling, 8 samples
   for _ in range(4):
@@ -92,9 +92,13 @@ if __name__ == "__main__":
   dataset = utils.create_dataset(
     input_features=np.array(stacs_memory),
     output_labels=np.array(nextstates_memory),
-    batch_size=4
+    batch_size=4,
+    num_epochs=num_epochs
   )
-  # features, labels = next(iter(dataset))
+  # for epoch in range(num_epochs):
+  #   for i, (x, y) in enumerate(dataset):
+  #     print("epoch: {:03d}, iter: {:03d}".format(epoch, i))
+  #     print()
   optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
   global_step = tf.train.get_or_create_global_step()
   loss_value, grads = grad(
@@ -104,18 +108,18 @@ if __name__ == "__main__":
   )
   for epoch in range(num_epochs):
     epoch_loss_avg = tfe.metrics.Mean()
-    for x, y in dataset:
+    for i, (x,y) in enumerate(dataset):
       # optimize model
       loss_value, grads = grad(model, x, y)
       optimizer.apply_gradients(
-        zip(grads, model.variables),
+      zip(grads, model.variables),
         global_step
       )
       # track progress
       epoch_loss_avg(loss_value)  # add current batch loss
-  # log training
-  if epoch % 10 == 0:
-    print("Epoch {:03d}: Loss: {:.3f}".format(epoch, epoch_loss_avg.result()))
+      # log training
+      print("Epoch {:03d}: Iteration: {:03d}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
+
 
   # # Control with more samples
   # for episode in range(num_episodes):

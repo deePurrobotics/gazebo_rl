@@ -59,7 +59,7 @@ def sample_to_batch(samples_list, num_states, num_actions):
 
   return x_batch, y_batch
 
-def create_dataset(input_features, output_labels, shuffle=True, num_epochs=None, batch_size):
+def create_dataset(input_features, output_labels, batch_size, shuffle=True, num_epochs=None):
   """ Create TF dataset from numpy arrays
   """
   dataset = tf.data.Dataset.from_tensor_slices((input_features, output_labels))
@@ -69,3 +69,4 @@ def create_dataset(input_features, output_labels, shuffle=True, num_epochs=None,
   dataset = dataset.repeat(num_epochs)
 
   return dataset
+  
