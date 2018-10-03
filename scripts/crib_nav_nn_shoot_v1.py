@@ -121,36 +121,37 @@ if __name__ == "__main__":
       print("Epoch {:03d}: Iteration: {:03d}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
 
 
-  # # Control with more samples
-  # for episode in range(num_episodes):
-  #   state, info = env.reset()
-  #   goal = info["goal_position"]
-  #   total_reward = 0
-  #   done = False
-  #   dataset = utils.create_dataset(
-  #     np.array(stacs_memory),
-  #     np.array(nextstates_memory),
-  #     batch_size
-  #   )
-  #   # train one epoch with newly collected samples
-  #   for x, y in dataset:
-  #     loss_value, grads = grad(model, x, y)
-  #     optimizer.apply_gradients(
-  #       zip(grads, model.variables),
-  #       global_step
-  #     )
-  #     print("Loss: {:3f}".format(loss_value))
-  #   # compute control policies as long as sampling more
-  #   for step in range(num_steps):
-  #     action = utils.shoot_action(model, state, goal, num_sequences, horizon)
-  #     next_state, reward, done, info = env.step(action)
-  #     stac = np.concatenate((state, np.array([action])))
-  #     stacs_memory.append(stac)
-  #     nextstates_memory.append(next_state)
-  #     total_reward += reward
-  #     state = next_state
-  #     print("Total reward: {:.4f}".format(total_reward))
-  #     if done:
-  #       break
-  #   reward_storage.append(total_reward)
+  # Control with more samples
+  for episode in range(num_episodes):
+    state, info = env.reset()
+    goal = info["goal_position"]
+    total_reward = 0
+    done = False
+    dataset = utils.create_dataset(
+      np.array(stacs_memory),
+      np.array(nextstates_memory),
+      batch_size,
+      num_epochs=1
+    )
+    # train one epoch with newly collected samples
+    for x, y in dataset:
+      loss_value, grads = grad(model, x, y)
+      optimizer.apply_gradients(
+        zip(grads, model.variables),
+        global_step
+      )
+      print("Loss: {:3f}".format(loss_value))
+    # compute control policies as long as sampling more
+    for step in range(num_steps):
+      action = utils.shoot_action(model, state, goal, num_sequences, horizon)
+      next_state, reward, done, info = env.step(action)
+      stac = np.concatenate((state, np.array([action])))
+      stacs_memory.append(stac)
+      nextstates_memory.append(next_state)
+      total_reward += reward
+      state = next_state
+      print("Total reward: {:.4f}".format(total_reward))
+      if done:
+        break
+    reward_storage.append(total_reward)
 

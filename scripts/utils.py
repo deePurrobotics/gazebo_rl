@@ -70,3 +70,32 @@ def create_dataset(input_features, output_labels, batch_size, shuffle=True, num_
 
   return dataset
   
+def shoot_action(model, state, goal, num_sequences, horizon):
+  """ Find an action with most reward using random shoot
+  """
+  action_sequences = generate_action_sequence(
+    num_sequences,
+    horizon_len,
+  ) # (s,h) array
+  sequence_rewards = np.zeros(num_sequences)
+  # Compute reward for every sequence 
+  for seq in range(num_sequences):
+    old_state = np.array(state).astype(np.float32)
+    print("old_state = {:.4f}".format(old_state)) # debug
+    reward_in_horizon = 0
+    for hor in range(horizon_len):
+      stac = np.concatenate((old_state, [action_sequences[seq,hor]])).astype(np.float32) # state-action
+      new_state = model(stac_pair)
+      print("new_state = {}".format(new_state)) # debug
+      if np.linalg.norm(new_state[:2]-goal) < np.linalg.norm(old_state[:2]-goal):
+        reward = 1
+      else:
+        reward = 0
+      reward_in_horizon += reward
+      old_state = new_state
+      sequence_rewards[seq] = reward_in_horizon
+
+    idx = np.argmax(sequence_rewards) # action sequence index with max reward
+    optimal_action = int(action_sequences[idx,0]) # take first action of each sequence
+
+    return optimal_action
