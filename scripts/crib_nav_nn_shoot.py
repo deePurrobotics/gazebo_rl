@@ -14,166 +14,163 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import tensorflow as tf
+import tensorflow.contrib.eager as tfe
 import gym
 import rospy
 import random
+import os
+import datetime
 import matplotlib.pyplot as plt
 
 import openai_ros_envs.crib_task_env
 import utils
 
-class Model:
-  def __init__(self, num_states, num_actions, batch_size):
-    self._num_states = num_states
-    self._num_inputs = num_states + num_actions
-    self._batch_size = batch_size
-    # define the placeholders
-    self._stacs = None # states-actions pair
-    self._new_states = None
-    # the output operations
-    self._logits = None
-    self._optimizer = None
-    self._var_init = None
-    # now setup the model
-    self._define_model()
+tf.enable_eager_execution()
 
-  def _define_model(self):
-    self._stacs = tf.placeholder(shape=[None, self._num_inputs], dtype=tf.float32)
-    self._new_states = tf.placeholder(shape=[None, self._num_states], dtype=tf.float32)
-    # create a couple of fully connected hidden layers
-    fc1 = tf.layers.dense(self._stacs, 32, activation=tf.nn.relu)
-    fc2 = tf.layers.dense(fc1, 16, activation=tf.nn.relu)
-    self._logits = tf.layers.dense(fc2, self._num_states)
-    loss = tf.losses.mean_squared_error(self._new_states, self._logits)
-    self._optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
-    self._var_init = tf.global_variables_initializer()
 
-  def predict_one(self, stacs, sess):
-    return sess.run(
-      self._logits,
-      feed_dict={self._stacs: stacs.reshape(1, self._num_inputs)}
-    )
-  
-  def predict_batch(self, stacs, sess):
-    return sess.run(self._logits, feed_dict={self._stacs: stacs})
+def loss(model, x, y):
+  y_ = model(x)
+  return tf.losses.mean_squared_error(labels=y, predictions=y_)
 
-  def train_batch(self, sess, x_batch, y_batch):
-    sess.run(self._optimizer, feed_dict={self._stacs: x_batch, self._new_states: y_batch})
-
-class Memory:
-  def __init__(self, max_memory):
-    self._max_memory = max_memory
-    self._samples = []
-
-  def add_sample(self, sample):
-    self._samples.append(sample)
-    if len(self._samples) > self._max_memory:
-      self._samples.pop(0)
-
-  def sample(self, num_samples):
-    if num_samples > len(self._samples):
-      return random.sample(self._samples, len(self._samples))
-    else:
-      return random.sample(self._samples, num_samples)
-
-class ModelBasedController():
-  def __init__(self, sess, model):
-    self._sess = sess
-    self._model = model
-
-  def train(self, x_batch, y_batch):
-    self._model.train_batch(self._sess, x_batch, y_batch)
-
-  def shoot_action(self, state, goal, num_sequences, horizon):
-    action_sequences = utils.generate_action_sequence(
-      num_sequences,
-      horizon,
-      num_actions
-    ) # (s,h,a) array
-    sequence_rewards = np.zeros(num_sequences)
-    # Compute reward for every sequence 
-    for s in range(action_sequences.shape[0]):
-      old_state = np.array(state)
-      print("old_state = {}".format(old_state)) # debug
-      reward_in_horizon = 0
-      for h in range(horizon):
-        stac_pair = np.concatenate((state, action_sequences[s,h]))
-        new_state = np.array(self._model.predict_one(stac_pair, self._sess))[0]
-        print("new_state = {}".format(new_state)) # debug
-        if np.linalg.norm(new_state[:2]-goal) < np.linalg.norm(old_state[:2]-goal):
-          reward = 1
-        else:
-          reward = 0
-        reward_in_horizon += reward
-        old_state = new_state
-      sequence_rewards[s] = reward_in_horizon
-
-    best_seq_id = np.argmax(sequence_rewards)
-    optimal_action = int(action_sequences[best_seq_id,0][0]) # take first action of each sequence
-
-    return optimal_action
-
-  def random_action(self, num_actions):
-    action = random.randrange(num_actions)
-    return action
+def grad(model, inputs, targets):
+  with tf.GradientTape() as tape:
+    loss_value = loss(model, inputs, targets)
+  return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 if __name__ == "__main__":
-  rospy.init_node("turtlebot2_crib_mpc", anonymous=True, log_level=rospy.DEBUG)
+  # init node
+  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.INFO)
+  # create env
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")
-  # Set parameters
+  # set parameters
   num_actions = env.action_space.n
   num_states = env.observation_space.shape[0]
-  num_episodes = 64
-  num_steps = 128
-  num_sequences = 100
-  horizon = 10 # number of time steps the controller considers
+  num_episodes = 128
+  num_steps = 256
+  num_sequences = 256
+  len_horizon = 128 # number of time steps the controller considers
   batch_size = 64
-  nn_model = Model(num_states, num_actions, batch_size)
-  memory = Memory(100000)
+  
+  stacs_memory = []
+  nextstates_memory = []
+  # setup model
+  model = tf.keras.Sequential([
+    tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(num_states+1,)),  # input shape required
+    tf.keras.layers.Dense(16, activation=tf.nn.relu),
+    tf.keras.layers.Dense(num_states)
+  ])
+  # set training parameters
+  num_epochs = 128
 
+  # Random Sampling
+  for _ in range(512):
+    state, _ = env.reset()
+    state = state.astype(np.float32)
+    for _ in range(32):
+      action = random.randrange(num_actions)
+      next_state, _, _, _ = env.step(action)
+      next_state = next_state.astype(np.float32)
+      stac = np.concatenate((state, np.array([action]))).astype(np.float32)
+      stacs_memory.append(stac)
+      nextstates_memory.append(next_state.astype(np.float32))
+      state = next_state
+      
+  # Train random sampled dataset
+  dataset = utils.create_dataset(
+    input_features=np.array(stacs_memory),
+    output_labels=np.array(nextstates_memory),
+    batch_size=batch_size,
+    num_epochs=num_epochs
+  )
+  # for epoch in range(num_epochs):
+  #   for i, (x, y) in enumerate(dataset):
+  #     print("epoch: {:03d}, iter: {:03d}".format(epoch, i))
+  #     print()
+  optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+  global_step = tf.train.get_or_create_global_step()
+  loss_value, grads = grad(
+    model,
+    np.array(stacs_memory),
+    np.array(nextstates_memory)
+  )
+  # create check point
+  model_dir = "/home/linzhank/ros_ws/src/turtlebot_rl/scripts/"
+  today = datetime.datetime.today().strftime("%Y%m%d")
+  checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
+  if not os.path.exists(os.path.dirname(checkpoint_prefix)):
+    try:
+      os.makedirs(checkpoint_prefix)
+    except OSError as exc: # Guard against race condition
+      if exc.errno != errno.EEXIST:
+        raise
+  root = tf.train.Checkpoint(
+    optimizer=optimizer,
+    model=model,
+    optimizer_step=global_step
+  )
+  root.save(file_prefix=checkpoint_prefix)
+  # train random samples
+  for epoch in range(num_epochs):
+    epoch_loss_avg = tfe.metrics.Mean()
+    for i, (x,y) in enumerate(dataset):
+      # optimize model
+      loss_value, grads = grad(model, x, y)
+      optimizer.apply_gradients(
+      zip(grads, model.variables),
+        global_step
+      )
+      # track progress
+      epoch_loss_avg(loss_value)  # add current batch loss
+      # log training
+      print("Epoch {:03d}: Iteration: {:03d}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
+
+  # Control with more samples
   reward_storage = []
-  with tf.Session() as sess:
-    agent = ModelBasedController(sess, nn_model)
-    sess.run(tf.global_variables_initializer())
-    # Sample a bunch of random moves
-    rospy.logdebug("Initial random sampling start...")
-    for i in range(2):
-      state, info = env.reset()
-      for j in range(10):
-        if j%100 == 0:
-          rospy.logdebug("Initial random sampling in ep.{}, step{}".format(i+1,j+1))
-        action = agent.random_action(num_actions)
-        next_state, reward, done, info = env.step(action)
-        memory.add_sample((state, action, reward, next_state))
-    rospy.logdebug("Initial random sampling finished.")
-    # Training based on initial memory
-    agent.train()
-    # Start Training
-    for ep in range(num_episodes):
-      state, info = env.reset()
-      goal = info["goal_position"]
-      total_reward = 0
-      done = False
-      train_samples = memory.sample(num_samples=batch_size)
-      x_batch, y_batch = utils.sample_to_batch(
-        train_samples,
-        num_states,
+  for episode in range(num_episodes):
+    state, info = env.reset()
+    state = state.astype(np.float32)
+    goal = info["goal_position"]
+    total_reward = 0
+    done = False
+    # compute control policies as long as sampling more
+    for step in range(num_steps):
+      action_sequences = utils.generate_action_sequence(
+        num_sequences,
+        len_horizon,
         num_actions
       )
-      agent.train(x_batch, y_batch)
-      for st in range(num_steps):
-        action = agent.shoot_action(state, goal, num_sequences, horizon)
-        next_state, reward, done, info = env.step(action)
-        memory.add_sample((state, action, reward, next_state))
-        total_reward += reward
-        state = next_state
-        rospy.loginfo("Total reward = {}".format(total_reward))
-        if done:
-          break
-      reward_storage.append(total_reward)
+      action = utils.shoot_action(
+        model,
+        action_sequences,
+        state,
+        goal
+      )
+      next_state, reward, done, info = env.step(action)
+      next_state = next_state.astype(np.float32)
+      stac = np.concatenate((state, np.array([action]))).astype(np.float32)
+      stacs_memory.append(stac)
+      nextstates_memory.append(next_state)
+      total_reward += reward
+      state = next_state
+      print("Total reward: {:.4f}".format(total_reward))
+      if done:
+        break
+    reward_storage.append(total_reward)
+    # Train with samples at the end of every episode
+    dataset = utils.create_dataset(
+      np.array(stacs_memory),
+      np.array(nextstates_memory),
+      batch_size=batch_size,
+      num_epochs=1
+    )
+    for i, (x, y) in enumerate(dataset):
+      loss_value, grads = grad(model, x, y)
+      optimizer.apply_gradients(
+        zip(grads, model.variables),
+        global_step
+      )
+      print("Batch: {:04d}, Loss: {:.4f}".format(i, loss_value))
 
-    sess.close()
 
-  plt.plot(reward_storage)
