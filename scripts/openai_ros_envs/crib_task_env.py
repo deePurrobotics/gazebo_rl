@@ -59,8 +59,13 @@ class CribTaskEnv(TurtlebotRobotEnv):
     # Linear and angular speed for /cmd_vel
     self.linear_speed = 0.4 # rospy.get_param('/turtlebot2/linear_speed')
     self.angular_speed = 1 # rospy.get_param('/turtlebot2/angular_speed')        
-    # Set model state service
-    self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+    # Set model state
+    self.set_model_state_publisher = rospy.Publisher(
+      "/gazebo/set_model_state",
+      ModelState,
+      queue_size=10
+    )
+    # self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
     # Here we will add any init functions prior to starting the MyRobotEnv
     super(CribTaskEnv, self).__init__()
@@ -68,7 +73,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
   def _set_init(self):
     """ 
     Set initial condition for simulation
-    1. Set turtlebot at a random pose inside crib by calling /gazebo/set_model_state service
+    1. Set turtlebot at a random pose inside crib by publishing /gazebo/set_model_state topic
     2. Set a goal point inside crib for turtlebot to navigate towards
     
     Returns: 
@@ -93,11 +98,12 @@ class CribTaskEnv(TurtlebotRobotEnv):
     model_state.pose.orientation.z = 1
     model_state.pose.orientation.w = w
     model_state.reference_frame = "world"
-    rospy.wait_for_service('/gazebo/set_model_state')
-    try:
-      self.set_model_state(model_state)
-    except rospy.ServiceException as e:
-      rospy.logerr("/gazebo/pause_physics service call failed")
+    self.set_model_state_publisher.publish(model_state)
+    # rospy.wait_for_service('/gazebo/set_model_state')
+    # try:
+    #   self.set_model_state(model_state)
+    # except rospy.ServiceException as e:
+    #   rospy.logerr("/gazebo/pause_physics service call failed")
     rospy.logdebug("Turtlebot was initiated as {}".format(model_state))
 
     # Set goal point
