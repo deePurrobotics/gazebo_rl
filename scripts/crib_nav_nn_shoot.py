@@ -19,6 +19,7 @@ import gym
 import rospy
 import random
 import os
+import time
 import datetime
 import matplotlib.pyplot as plt
 
@@ -39,7 +40,7 @@ def grad(model, inputs, targets):
 
 if __name__ == "__main__":
   # init node
-  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.INFO)
+  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.DEBUG)
   # create env
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)
@@ -62,20 +63,33 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(num_states)
   ])
   # set training parameters
-  num_epochs = 128
+  num_epochs = 64
+  num_sample_steps = 32
 
   # Random Sampling
-  for _ in range(512):
-    state, _ = env.reset()
+  rs_start = time.time()
+  for i in range(num_epochs):
+    print("Sampling: {:03d}".format(i+1))
+    state, info = env.reset()
+    done = False
     state = state.astype(np.float32)
-    for _ in range(32):
+    for j in range(num_sample_steps):
       action = random.randrange(num_actions)
-      next_state, _, _, _ = env.step(action)
+      next_state, _, done, info = env.step(action)
+      print("Sampling {}, Step: {}, current_position: {}, goal_position: {}, done: {}".format(
+        i,
+        j,
+        info["current_position"],
+        info["goal_position"],
+        done
+      ))
       next_state = next_state.astype(np.float32)
       stac = np.concatenate((state, np.array([action]))).astype(np.float32)
       stacs_memory.append(stac)
       nextstates_memory.append(next_state.astype(np.float32))
       state = next_state
+  rs_end = time.time()
+  print("Random sampling takes: {:.4f}".format(rs_end-rs_start))
       
   # Train random sampled dataset
   dataset = utils.create_dataset(
@@ -112,9 +126,11 @@ if __name__ == "__main__":
   )
   root.save(file_prefix=checkpoint_prefix)
   # train random samples
+  rst_start = time.time()
   for epoch in range(num_epochs):
     epoch_loss_avg = tfe.metrics.Mean()
     for i, (x,y) in enumerate(dataset):
+      batch_start = time.time()
       # optimize model
       loss_value, grads = grad(model, x, y)
       optimizer.apply_gradients(
@@ -125,6 +141,10 @@ if __name__ == "__main__":
       epoch_loss_avg(loss_value)  # add current batch loss
       # log training
       print("Epoch {:03d}: Iteration: {:03d}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
+      batch_end = time.time()
+      print("Batch {} training takes: {:.4f}".format(i, batch_end-batch_start))
+  rst_end = time.time()
+  print("Random samples training takes {:.4f}".format(rst_end-rst_start))
 
   # Control with more samples
   reward_storage = []
@@ -154,7 +174,11 @@ if __name__ == "__main__":
       nextstates_memory.append(next_state)
       total_reward += reward
       state = next_state
-      print("Total reward: {:.4f}".format(total_reward))
+      print("Current position: {}, Goal position: {}, Reward: {:.4f}".format(
+        info["current_position"],
+        info["goal_position"],
+        reward
+      ))
       if done:
         break
     reward_storage.append(total_reward)
@@ -163,8 +187,9 @@ if __name__ == "__main__":
       np.array(stacs_memory),
       np.array(nextstates_memory),
       batch_size=batch_size,
-      num_epochs=1
+      num_epochs=8
     )
+    ep_start = time.time()
     for i, (x, y) in enumerate(dataset):
       loss_value, grads = grad(model, x, y)
       optimizer.apply_gradients(
@@ -172,5 +197,6 @@ if __name__ == "__main__":
         global_step
       )
       print("Batch: {:04d}, Loss: {:.4f}".format(i, loss_value))
-
+    ep_end=time.time()
+    print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
 

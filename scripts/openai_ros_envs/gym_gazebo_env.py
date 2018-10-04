@@ -6,7 +6,7 @@ from .gazebo_connection import GazeboConnection
 
 class GymGazeboEnv(gym.Env):
 
-  def __init__(self, start_init_physics_parameters=True, reset_world_or_sim="SIMULATION"):
+  def __init__(self, start_init_physics_parameters=True, reset_world_or_sim="WORLD"):
     # To reset Simulations
     rospy.logdebug("START init RobotGazeboEnv")
     self.gazebo = GazeboConnection(start_init_physics_parameters,reset_world_or_sim)
