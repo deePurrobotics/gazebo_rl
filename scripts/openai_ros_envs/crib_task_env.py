@@ -18,7 +18,7 @@ from geometry_msgs.msg import Pose, Twist, Point
 register(
   id='TurtlebotCrib-v0',
   entry_point='openai_ros_envs.crib_task_env:CribTaskEnv',
-  timestep_limit=10000,
+  timestep_limit=1000000,
 )
 
 
@@ -63,7 +63,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     self.set_model_state_publisher = rospy.Publisher(
       "/gazebo/set_model_state",
       ModelState,
-      queue_size=10
+      queue_size=100
     )
     # self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
@@ -99,7 +99,10 @@ class CribTaskEnv(TurtlebotRobotEnv):
     model_state.pose.orientation.z = 1
     model_state.pose.orientation.w = w
     model_state.reference_frame = "world"
-    self.set_model_state_publisher.publish(model_state)
+    rate = rospy.Rate(100)
+    for _ in range(10):
+      self.set_model_state_publisher.publish(model_state)
+      rate.sleep()
     # rospy.wait_for_service('/gazebo/set_model_state')
     # try:
     #   self.set_model_state(model_state)
@@ -113,6 +116,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     self.goal_position = np.array([goal_x, goal_y])
     while np.linalg.norm(self.goal_position - self.init_position) <= 0.5:
     # while int(goal_x)==int(x) and int(goal_y)==int(y): # goal and bot should not in the same grid
+      rospy.logerr("Goal was set too close to the robot, reset the goal...")
       goal_x = random.uniform(self.low[0]+.5, self.high[0]-.5)
       goal_y = random.uniform(self.low[1]+.5, self.high[1]-.5)
     self.goal_position = np.array([goal_x, goal_y])
