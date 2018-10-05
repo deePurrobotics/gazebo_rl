@@ -119,7 +119,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
       rospy.logerr("Goal was set too close to the robot, reset the goal...")
       goal_x = random.uniform(self.low[0]+.5, self.high[0]-.5)
       goal_y = random.uniform(self.low[1]+.5, self.high[1]-.5)
-    self.goal_position = np.array([goal_x, goal_y])
+      self.goal_position = np.array([goal_x, goal_y])
     rospy.logdebug("Goal point was set @ {}".format(self.goal_position))
     # Episode cannot done
     self._episode_done = False
