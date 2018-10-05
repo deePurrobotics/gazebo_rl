@@ -40,7 +40,7 @@ def grad(model, inputs, targets):
 
 if __name__ == "__main__":
   # init node
-  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.INFO)
+  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.DEBUG)
   # create env
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)

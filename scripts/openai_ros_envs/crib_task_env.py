@@ -81,6 +81,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
       goal_position: array([x, y])
       
     """
+    rospy.logdebug("Start initializing robot...")
     # Set turtlebot inside crib, away from crib edges
     x = random.uniform(self.low[0]+1, self.high[0]-1)
     y = random.uniform(self.low[1]+1, self.high[1]-1)
@@ -104,7 +105,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     #   self.set_model_state(model_state)
     # except rospy.ServiceException as e:
     #   rospy.logerr("/gazebo/pause_physics service call failed")
-    rospy.logdebug("Turtlebot was initiated as {}".format(model_state))
+    rospy.logdebug("Robot was initiated as {}".format(model_state.pose))
 
     # Set goal point
     goal_x = random.uniform(self.low[0]+.5, self.high[0]-.5)
@@ -119,7 +120,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     # Episode cannot done
     self._episode_done = False
     # Give the system a little time to finish initialization
-    time.sleep(0.2)
+    rospy.logdebug("Finish initialize robot.")
     
     return self.init_position, self.goal_position
 
