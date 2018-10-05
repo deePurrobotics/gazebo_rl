@@ -65,7 +65,7 @@ if __name__ == "__main__":
   ])
   # set training parameters
   num_epochs = 512
-  num_sample_steps = 32
+  num_iters = 32
 
   # Random Sampling
   rs_start = time.time()
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     state, info = env.reset()
     done = False
     state = state.astype(np.float32)
-    for j in range(num_sample_steps):
+    for j in range(num_iters):
       action = random.randrange(num_actions)
       next_state, _, done, info = env.step(action)
       print("Sampling {}, Step: {}, current_position: {}, goal_position: {}, done: {}".format(
@@ -206,7 +206,7 @@ if __name__ == "__main__":
       "{:d} Random Samples was trained {:d} epochs",
       "\n{:d} Controlled Samples was trained {:d} epochs",
       "\nTotal execution time: {:.4f}".format(
-        num_epochs*num_sample_steps,
+        num_epochs*num_iters,
         num_epochs/4,
         num_episodes*num_steps,
         num_episodes*4,
