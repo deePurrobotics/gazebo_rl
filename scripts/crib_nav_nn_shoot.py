@@ -40,7 +40,7 @@ def grad(model, inputs, targets):
 
 if __name__ == "__main__":
   # init node
-  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.DEBUG)
+  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.INFO)
   # create env
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)
@@ -50,8 +50,8 @@ if __name__ == "__main__":
   num_states = env.observation_space.shape[0]
   num_episodes = 128
   num_steps = 256
-  num_sequences = 256
-  len_horizon = 128 # number of time steps the controller considers
+  num_sequences = 1024
+  len_horizon = 1024 # number of time steps the controller considers
   batch_size = 64
   
   stacs_memory = []
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(num_states)
   ])
   # set training parameters
-  num_epochs = 64
+  num_epochs = 256
   num_sample_steps = 32
 
   # Random Sampling
