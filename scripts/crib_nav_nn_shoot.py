@@ -45,6 +45,7 @@ if __name__ == "__main__":
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")
+  main_start = time.time()
   # set parameters
   num_actions = env.action_space.n
   num_states = env.observation_space.shape[0]
@@ -52,7 +53,7 @@ if __name__ == "__main__":
   num_steps = 256
   num_sequences = 1024
   len_horizon = 1024 # number of time steps the controller considers
-  batch_size = 64
+  batch_size = 256
   
   stacs_memory = []
   nextstates_memory = []
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(num_states)
   ])
   # set training parameters
-  num_epochs = 256
+  num_epochs = 512
   num_sample_steps = 32
 
   # Random Sampling
@@ -127,7 +128,7 @@ if __name__ == "__main__":
   root.save(file_prefix=checkpoint_prefix)
   # train random samples
   rst_start = time.time()
-  for epoch in range(num_epochs):
+  for epoch in range(num_epochs/8):
     epoch_loss_avg = tfe.metrics.Mean()
     for i, (x,y) in enumerate(dataset):
       batch_start = time.time()
@@ -187,7 +188,7 @@ if __name__ == "__main__":
       np.array(stacs_memory),
       np.array(nextstates_memory),
       batch_size=batch_size,
-      num_epochs=8
+      num_epochs=4
     )
     ep_start = time.time()
     for i, (x, y) in enumerate(dataset):
@@ -200,3 +201,15 @@ if __name__ == "__main__":
     ep_end=time.time()
     print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
 
+    main_end = time.time()
+    print(
+      "{:d} Random Samples was trained {:d} epochs",
+      "\n{:d} Controlled Samples was trained {:d} epochs",
+      "\nTotal execution time: {:.4f}".format(
+        num_epochs*num_sample_steps,
+        num_epochs/4,
+        num_episodes*num_steps,
+        num_episodes*4,
+        main_end-main_start
+      )
+    )
