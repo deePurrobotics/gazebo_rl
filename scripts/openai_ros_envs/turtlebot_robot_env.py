@@ -240,110 +240,19 @@ class TurtlebotRobotEnv(GymGazeboEnv):
         
   # Methods that the TrainingEnvironment will need.
   # ----------------------------
-  def move_base(self, linear_speed, angular_speed, epsilon=0.05, update_rate=10, min_laser_distance=-1):
-    """
-    It will move the base based on the linear and angular speeds given.
-    It will wait untill those twists are achived reading from the odometry topic.
-    :param linear_speed: Speed in the X axis of the robot base frame
-    :param angular_speed: Speed of the angular turning of the robot base frame
-    :param epsilon: Acceptable difference between the speed asked and the odometry readings
-    :param update_rate: Rate at which we check the odometry.
-    :return: 
+  def move_base(self, linear_speed, angular_speed):
+    """It will move the base based on the linear and angular speeds given.
     """
     cmd_vel_value = Twist()
     cmd_vel_value.linear.x = linear_speed
     cmd_vel_value.angular.z = angular_speed
     rospy.logdebug("TurtleBot2 Base Twist Cmd>>{}".format(cmd_vel_value))
     self._check_publishers_connection()
-    self._cmd_vel_pub.publish(cmd_vel_value)
-    self.wait_until_twist_achieved(
-      cmd_vel_value,
-      epsilon,
-      update_rate,
-      min_laser_distance
-    )
-    
-  def wait_until_twist_achieved(self, cmd_vel_value, epsilon, update_rate, min_laser_distance=-1):
-    """
-    We wait for the cmd_vel twist given to be reached by the robot reading
-    from the odometry. 
-    :param cmd_vel_value: Twist we want to wait to reach.
-    :param epsilon: Error acceptable in odometry readings.
-    :param update_rate: Rate at which we check the odometry.
-    :return:
-    """
-    rospy.logdebug("START wait_until_twist_achieved...")    
-
-    rate = rospy.Rate(update_rate)
-    start_wait_time = rospy.get_rostime().to_sec()
-    end_wait_time = 0.0
-    # epsilon = 0.05
-        
-    rospy.logdebug("Desired Twist Cmd>>{}".format(cmd_vel_value))
-    rospy.logdebug("epsilon>>{}".format(epsilon))
-        
-    linear_speed = cmd_vel_value.linear.x
-    angular_speed = cmd_vel_value.angular.z
-        
-    linear_speed_plus = linear_speed + epsilon
-    linear_speed_minus = linear_speed - epsilon
-    angular_speed_plus = angular_speed + epsilon
-    angular_speed_minus = angular_speed - epsilon
-        
-    while not rospy.is_shutdown():
-      # crashed_into_something = self.has_crashed(min_laser_distance)
-      current_odometry = self._check_odom_ready()
-      odom_linear_vel = current_odometry.twist.twist.linear.x
-      odom_angular_vel = current_odometry.twist.twist.angular.z
-            
-      rospy.logdebug("Linear VEL={}, ?RANGE=[{}, {}]".format(odom_linear_vel, linear_speed_minus, linear_speed_plus))
-      rospy.logdebug("Angular VEL={}, ?RANGE=[{}, {}]".format(odom_angular_vel, angular_speed_minus, angular_speed_plus))
-            
-      linear_vel_are_close = (odom_linear_vel <= linear_speed_plus) and (odom_linear_vel > linear_speed_minus)
-      angular_vel_are_close = (odom_angular_vel <= angular_speed_plus) and (odom_angular_vel > angular_speed_minus)
-            
-      if linear_vel_are_close and angular_vel_are_close:
-        rospy.logdebug("Reached Velocity!")
-        end_wait_time = rospy.get_rostime().to_sec()
-        break
-      elif rospy.get_rostime().to_sec() - start_wait_time > 0.5:
-        rospy.logdebug("Wall! Cannot reach desired velocity...")
-        end_wait_time = rospy.get_rostime().to_sec()
-        break
-      rospy.logdebug("Not there yet, keep waiting...")
+    rate = rospy.Rate(100)
+    for _ in range(10):
+      self._cmd_vel_pub.publish(cmd_vel_value)
+      rospy.logdebug("Moving base with cmd_vel: {}".format(cmd_vel_value))
       rate.sleep()
-    delta_time = end_wait_time- start_wait_time
-    rospy.logdebug("[Wait Time=" + str(delta_time)+"]")    
-    rospy.logdebug("END wait_until_twist_achieved...")
-    
-    return delta_time
-        
-  def has_crashed(self, min_laser_distance):
-    """
-    It states based on the laser scan if the robot has crashed or not.
-    Crashed means that the minimum laser reading is lower than the
-    min_laser_distance value given.
-    If min_laser_distance == -1, it returns always false, because its the way
-    to deactivate this check.
-    """
-    robot_has_crashed = False
-        
-    if min_laser_distance != -1:
-      laser_data = self.get_laser_scan()
-      for i, item in enumerate(laser_data.ranges):
-        if item == float ('Inf') or numpy.isinf(item):
-          pass
-        elif numpy.isnan(item):
-          pass
-        else:
-          # Has a Non Infinite or Nan Value
-          if (item < min_laser_distance):
-            rospy.logerr("TurtleBot HAS CRASHED >>> item=" + str(item)+"< "+str(min_laser_distance))
-            robot_has_crashed = True
-            break
-        
-    return robot_has_crashed
-        
 
   def get_odom(self):
     return self.odom

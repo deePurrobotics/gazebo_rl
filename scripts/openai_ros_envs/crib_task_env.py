@@ -108,7 +108,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     # while int(goal_x)==int(x) and int(goal_y)==int(y): # goal and bot should not in the same grid
       goal_x = random.uniform(self.low[0]+.5, self.high[0]-.5)
       goal_y = random.uniform(self.low[1]+.5, self.high[1]-.5)
-    self.goal_position = np.array([goal_x, goal_y])
+      self.goal_position = np.array([goal_x, goal_y])
     rospy.logdebug("Goal point was set @ {}".format(self.goal_position))
     # Episode cannot done
     self._episode_done = False
@@ -137,9 +137,6 @@ class CribTaskEnv(TurtlebotRobotEnv):
     self.move_base(
       linear_speed=lin_spd_pool[i_l],
       angular_speed=ang_spd_pool[i_a],
-      epsilon=0.05,
-      update_rate=10,
-      min_laser_distance=-1
     )
     rospy.logdebug("END Set Action ==>"+str(action))
 
