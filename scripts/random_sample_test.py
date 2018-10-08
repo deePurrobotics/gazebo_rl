@@ -116,7 +116,7 @@ if __name__ == "__main__":
   print("Random samples training takes {:.4f}".format(rst_end-rst_start))
 
   # Test model accuracy
-  error_storage = np.zeros(num_episodes, num_steps)
+  error_storage = np.zeros((num_episodes, num_steps))
   for episode in range(num_episodes):
     state, info = env.reset()
     done = False
