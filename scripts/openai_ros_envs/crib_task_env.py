@@ -148,9 +148,6 @@ class CribTaskEnv(TurtlebotRobotEnv):
     self.move_base(
       linear_speed=lin_spd_pool[i_l],
       angular_speed=ang_spd_pool[i_a],
-      epsilon=0.05,
-      update_rate=10,
-      min_laser_distance=-1
     )
     rospy.logdebug("END Set Action ==>"+str(action))
 
