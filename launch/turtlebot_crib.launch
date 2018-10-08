@@ -12,7 +12,7 @@
     <arg name="use_sim_time" value="true"/>
     <arg name="debug" value="false"/>
     <arg name="gui" value="$(arg gui)" />
-    <arg name="world_name" value="$(find turtlebot_rl)/worlds/brick_crib_10by10.world"/>
+    <arg name="world_name" value="$(find gazebo_rl)/worlds/brick_crib_10by10.world"/>
   </include>
   
   <include file="$(find turtlebot_gazebo)/launch/includes/$(arg base).launch.xml">
@@ -37,5 +37,5 @@
   </node>
 
   <!-- Load openai_ros environments parameters -->
-  <rosparam command="load" file="$(find turtlebot_rl)/config/crib_env_params.yaml" />
+  <!-- rosparam command="load" file="$(find gazebo_rl)/config/crib_env_params.yaml" /-->
 </launch>

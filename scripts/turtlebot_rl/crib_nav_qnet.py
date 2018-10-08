@@ -21,7 +21,7 @@ import random
 import math
 import matplotlib.pyplot as plt
 
-import openai_ros_envs.crib_task_env
+import turtlebot_envs.crib_task_env
 
 class Model:
   def __init__(self, num_states, num_actions, batch_size):

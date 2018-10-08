@@ -14,7 +14,7 @@ from geometry_msgs.msg import Twist
 from gazebo_msgs.msg import ModelStates, LinkStates
 
 # import our training environment
-from openai_ros_envs import crib_task_env # need write task env
+from turtlebot_envs import crib_task_env # need write task env
 
 rospy.init_node('env_test', anonymous=True, log_level=rospy.DEBUG)    
 env = gym.make('TurtlebotCrib-v0')

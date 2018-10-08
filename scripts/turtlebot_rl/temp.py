@@ -8,7 +8,7 @@ import random
 import os
 import datetime
 
-import openai_ros_envs.crib_task_env
+import turtlebot_envs.crib_task_env
 
 tf.enable_eager_execution()
 

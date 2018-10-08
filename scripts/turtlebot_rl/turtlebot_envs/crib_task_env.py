@@ -17,7 +17,7 @@ from geometry_msgs.msg import Pose, Twist, Point
 # Register crib env 
 register(
   id='TurtlebotCrib-v0',
-  entry_point='openai_ros_envs.crib_task_env:CribTaskEnv',
+  entry_point='turtlebot_envs.crib_task_env:CribTaskEnv',
   timestep_limit=1000000,
 )
 

@@ -4,7 +4,7 @@ import numpy as np
 import random
 import rospy
 from geometry_msgs.msg import Twist
-from openai_ros_envs.gazebo_connection import GazeboConnection
+from turtlebot_envs.gazebo_connection import GazeboConnection
 
 if __name__ == "__main__":
   gazebo = GazeboConnection(start_init_physics_parameters=True, reset_world_or_sim="WORLD")

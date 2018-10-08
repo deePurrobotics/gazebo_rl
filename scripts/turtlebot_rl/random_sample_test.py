@@ -11,7 +11,7 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 
-import openai_ros_envs.crib_task_env
+import turtlebot_envs.crib_task_env
 import utils
 
 tf.enable_eager_execution()
