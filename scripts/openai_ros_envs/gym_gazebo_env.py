@@ -43,11 +43,8 @@ class GymGazeboEnv(gym.Env):
     self.gazebo.unpauseSim()
     self.init_position, self.goal_position = self._set_init()
     self.gazebo.pauseSim()
-    # self.gazebo.unpauseSim()
-    # self.gazebo.pauseSim()
     obs = self._observe()
     info = self._get_info()
-    # self.gazebo.pauseSim()
     rospy.logdebug("END Reseting RobotGazeboEnvironment")
     return obs, info
   

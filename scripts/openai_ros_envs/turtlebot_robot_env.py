@@ -241,7 +241,7 @@ class TurtlebotRobotEnv(GymGazeboEnv):
   # Methods that the TrainingEnvironment will need.
   # ----------------------------
   def move_base(self, linear_speed, angular_speed):
-    """It will move the base based on the linear and angular speeds given.
+    """It will move the base based at the given linear and angular speeds at 10 Hz.
     """
     cmd_vel_value = Twist()
     cmd_vel_value.linear.x = linear_speed
