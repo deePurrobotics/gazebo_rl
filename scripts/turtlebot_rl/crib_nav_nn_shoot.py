@@ -128,7 +128,7 @@ if __name__ == "__main__":
   root.save(file_prefix=checkpoint_prefix)
   # train random samples
   rst_start = time.time()
-  for epoch in range(num_epochs/8):
+  for epoch in range(int(num_epochs/4)):
     epoch_loss_avg = tfe.metrics.Mean()
     for i, (x,y) in enumerate(dataset):
       batch_start = time.time()
