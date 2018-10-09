@@ -95,3 +95,35 @@ def shoot_action(model, action_sequences, state, goal):
     optimal_action = int(action_sequences[idx,0]) # take first action of each sequence
 
     return optimal_action
+
+def greedy_action(model, num_actions, state, goal):
+  """ Find an action with most reward
+  """
+  action_list = range(num_actions)
+  reward = np.zeros(num_actions)
+  old_state = np.array(state).reshape(1,-1).astype(np.float32)
+  for action in action_list:
+    stac = np.concatenate((old_state, action), axis=1).astype(np.float32) # state-action pair
+  
+  # Compute reward for every sequence 
+  for seq in range(action_sequences.shape[0]):
+    old_state = np.array(state).reshape(1,-1).astype(np.float32)
+    # print("old_state: {}".format(old_state)) # debug
+    reward_in_horizon = 0
+    for hor in range(action_sequences.shape[1]):
+      action = np.array([[action_sequences[seq,hor]]])
+      stac = np.concatenate((old_state, action), axis=1).astype(np.float32) # state-action pair
+      new_state = model(stac)
+      # print("new_state: {}".format(new_state)) # debug
+      if np.linalg.norm(new_state[0,:2]-goal) < np.linalg.norm(old_state[0,:2]-goal):
+        reward = 1
+      else:
+        reward = 0
+      reward_in_horizon += reward
+      old_state = new_state
+      sequence_rewards[seq] = reward_in_horizon
+
+    idx = np.argmax(sequence_rewards) # action sequence index with max reward
+    optimal_action = int(action_sequences[idx,0]) # take first action of each sequence
+
+    return optimal_action
