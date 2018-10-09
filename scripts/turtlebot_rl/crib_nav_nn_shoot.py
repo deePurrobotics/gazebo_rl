@@ -51,9 +51,9 @@ if __name__ == "__main__":
   num_states = env.observation_space.shape[0]
   num_episodes = 128
   num_steps = 256
-  num_sequences = 1024
+  num_sequences = 256
   len_horizon = 1024 # number of time steps the controller considers
-  batch_size = 256
+  batch_size = 2048
   
   stacs_memory = []
   nextstates_memory = []
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     np.array(nextstates_memory)
   )
   # create check point
-  model_dir = "/home/linzhank/ros_ws/src/turtlebot_rl/scripts/"
+  model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebo_rl"
   today = datetime.datetime.today().strftime("%Y%m%d")
   checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
   if not os.path.exists(os.path.dirname(checkpoint_prefix)):
