@@ -111,7 +111,7 @@ if __name__ == "__main__":
     np.array(nextstates_memory)
   )
   # create check point
-  model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebo_rl"
+  model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot_rl"
   today = datetime.datetime.today().strftime("%Y%m%d")
   checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
   if not os.path.exists(os.path.dirname(checkpoint_prefix)):
