@@ -40,7 +40,7 @@ def grad(model, inputs, targets):
 
 if __name__ == "__main__":
   # init node
-  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.DEBUG)
+  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.WARN)
   # create env
   env_name = "TurtlebotCrib-v0"
   env = gym.make(env_name)
@@ -49,11 +49,11 @@ if __name__ == "__main__":
   # set parameters
   num_actions = env.action_space.n
   num_states = env.observation_space.shape[0]
-  num_episodes = 128
+  num_episodes = 256
   num_steps = 256
   num_sequences = 256
   len_horizon = 1024 # number of time steps the controller considers
-  batch_size = 8192
+  batch_size = 65536
   
   stacs_memory = []
   nextstates_memory = []
@@ -64,8 +64,8 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(num_states)
   ])
   # set training parameters
-  num_epochs = 256
-  num_iters = 64
+  num_epochs = 16
+  num_iters = 128
 
   # Random Sampling
   rs_start = time.time()
@@ -99,10 +99,6 @@ if __name__ == "__main__":
     batch_size=batch_size,
     num_epochs=num_epochs
   )
-  # for epoch in range(num_epochs):
-  #   for i, (x, y) in enumerate(dataset):
-  #     print("epoch: {:03d}, iter: {:03d}".format(epoch, i))
-  #     print()
   optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
   global_step = tf.train.get_or_create_global_step()
   loss_value, grads = grad(
@@ -110,6 +106,23 @@ if __name__ == "__main__":
     np.array(stacs_memory),
     np.array(nextstates_memory)
   )
+  # create check point
+  model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot_rl"
+  today = datetime.datetime.today().strftime("%Y%m%d")
+  checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
+  if not os.path.exists(os.path.dirname(checkpoint_prefix)):
+    try:
+      os.makedirs(checkpoint_prefix)
+    except OSError as exc: # Guard against race condition
+      if exc.errno != errno.EEXIST:
+        raise
+  root = tf.train.Checkpoint(
+    optimizer=optimizer,
+    model=model,
+    optimizer_step=global_step
+  )
+  root.save(file_prefix=checkpoint_prefix)
+  
   # train random samples
   rst_start = time.time()
   for epoch in range(int(num_epochs/4)):
@@ -167,7 +180,7 @@ if __name__ == "__main__":
       np.array(stacs_memory),
       np.array(nextstates_memory),
       batch_size=batch_size,
-      num_epochs=4
+      num_epochs=num_epochs
     )
     ep_start = time.time()
     for i, (x, y) in enumerate(dataset):
@@ -182,13 +195,13 @@ if __name__ == "__main__":
 
     main_end = time.time()
     print(
-      "{:d} Random Samples was trained {:d} epochs",
-      "\n{:d} Controlled Samples was trained {:d} epochs",
+      "{} Random Samples was trained {} epochs",
+      "\n{} Controlled Samples was trained {} epochs",
       "\nTotal execution time: {:.4f}".format(
         num_epochs*num_iters,
-        num_epochs/4,
+        num_epochs,
         num_episodes*num_steps,
-        num_episodes*4,
+        num_episodes*num_epochs,
         main_end-main_start
       )
     )
