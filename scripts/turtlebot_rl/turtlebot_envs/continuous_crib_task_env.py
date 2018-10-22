@@ -34,7 +34,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     self.max_x = 5
     self.max_y = 5
     self.max_vx = 2
-    self.max_vy = y
+    self.max_vy = 2
     self.max_cosyaw = 1
     self.max_sinyaw = 1
     self.max_yawdot = math.pi
@@ -56,12 +56,15 @@ class CribTaskEnv(TurtlebotRobotEnv):
     )
     self.low_observation = -self.high_observation
     self.observation_space = spaces.Box(low=self.low_observation, high=self.high_observation) 
-    # observation, initial position and goal position
-    self.observation = None
+    # observation
+    self.observation = np.zeros(self.observation_space.shape[0])
+    self.observation[4] = self.max_cosyaw
+    # info, initial position and goal position
     self.init_position = np.zeros(2)
     self.current_position = np.zeros(2)
     self.previous_position = np.zeros(2)
     self.goal_position = np.zeros(2)
+    self.info = {}
     # Set model state
     self.set_model_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
     # self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
@@ -162,7 +165,55 @@ class CribTaskEnv(TurtlebotRobotEnv):
     
     self.observation = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
     rospy.logdebug("Observation ==> {}".format(self.observation))
+    
     return self.observation
+
+  def _announce_information(self):
+    """
+    Return:
+      info: {"init_position", "goal_position", "current_position", "previous_position"}
+    """
+    self.info = {
+      "init_position": self.init_position,
+      "goal_position": self.goal_position,
+      "current_position": self.current_position,
+      "previous_position": self.previous_position
+    }
+    
+    return self.info
+
+  def _is_done(self, obs, goal):
+    """
+    If TurtleBot moves into a small circle around the goal, return done==True
+    Args:
+      obs: observation
+      goal: goal position
+    Return:
+      episode_done
+    """
+    if np.linalg.norm(obs[:2]-goal) <= 0.04: # reaching goal position
+      self._episode_done = True
+      rospy.loginfo("Turtlebot reached destination !!!")
+    else:
+      self._episode_done = False
+      rospy.logdebug("TurtleBot is working on its way to goal @ {}...".format(self.goal_position))
+
+    return self._episode_done
+
+  def _compute_reward(self):
+    if not self._episode_done:
+      if np.linalg.norm(self.current_position-self.goal_position) \
+     < np.linalg.norm(self.previous_position-self.goal_position): # if move closer
+        reward = 0
+      else:
+        reward = -1
+    else:
+      # if bot reached goal, the init distance will be the reward
+      reward = np.linalg.norm(self.goal_position-self.init_position)
+    rospy.logdebug("reward = {}".format(reward))
+    
+    return reward
+
 
 
 def _check_publishers_connection(self):
