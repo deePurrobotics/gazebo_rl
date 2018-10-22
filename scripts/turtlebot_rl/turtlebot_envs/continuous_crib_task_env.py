@@ -40,7 +40,8 @@ class CribTaskEnv(TurtlebotRobotEnv):
     self.max_yawdot = math.pi
     # action space
     self.high_action = np.array([self.max_linear_speed, self.max_angular_speed])
-    self.low_action = np.array([-self.max_linear_speed, -self.max_angular_speed])
+    self.low_action = -self.high_action
+    self.action_space = spaces.Box(self.low_action, self.high_action, shape=(2,))
     # observation space
     self.high_observation = np.array(
       [
@@ -54,7 +55,9 @@ class CribTaskEnv(TurtlebotRobotEnv):
       ]
     )
     self.low_observation = -self.high_observation
-    # robot initial position and goal position
+    self.observation_space = spaces.Box(low=self.low_observation, high=self.high_observation) 
+    # observation, initial position and goal position
+    self.observation = None
     self.init_position = np.zeros(2)
     self.current_position = np.zeros(2)
     self.previous_position = np.zeros(2)
@@ -118,8 +121,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     
   def _take_action(self, action):
     """
-    Set linear and angular speed for Turtlebot and execute
-
+    Set linear and angular speed for Turtlebot and execute.
     Args:
       action: Twist().
     """
@@ -131,6 +133,40 @@ class CribTaskEnv(TurtlebotRobotEnv):
       rospy.logdebug("cmd_vel: \nlinear: {}\nangular{}".format(action.linear.x, action.angular.z))
       rate.sleep()
 
+  def _get_observation(self):
+    """
+    Get observations from env
+    Return:
+      observation: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot]
+    """
+    rospy.logdebug("Start Get Observation ==>")
+    model_states = self.get_model_states() # refer to turtlebot_robot_env
+    # update previous position
+    self.previous_position = self.current_position    
+    rospy.logdebug("model_states: {}".format(model_states))
+    x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
+    y = model_states.pose[-1].position.y
+    self.current_position = np.array([x, y])
+    v_x = model_states.twist[-1].linear.x
+    v_y = model_states.twist[-1].linear.y
+    quat = (
+      model_states.pose[-1].orientation.x,
+      model_states.pose[-1].orientation.y,
+      model_states.pose[-1].orientation.z,
+      model_states.pose[-1].orientation.w
+    )
+    euler = tf.transformations.euler_from_quaternion(quat)
+    cos_yaw = math.cos(euler[2])
+    sin_yaw = math.sin(euler[2])
+    yaw_dot = model_states.twist[-1].angular.z
+    
+    self.observation = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
+    rospy.logdebug("Observation ==> {}".format(self.observation))
+    return self.observation
+
 
 def _check_publishers_connection(self):
+  raise NotImplementedError()
+
+def _cmd_vel_pub(self):
   raise NotImplementedError()
