@@ -25,7 +25,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
   def __init__(self):
     """
     This task-env is designed for TurtleBot navigating to a random placed goal
-    in a walled world. Action and state space will both be set to continuous. 
+    in a walled world. Action and state space will be both set to continuous. 
     """
     # action limits
     self.max_linear_speed = 2.0
@@ -127,14 +127,18 @@ class CribTaskEnv(TurtlebotRobotEnv):
     """
     Set linear and angular speed for Turtlebot and execute.
     Args:
-      action: Twist().
+      action: 2-d numpy array.
     """
-    rospy.logdebug("TurtleBot2 Base Twist Cmd>>\nlinear: {}\nangular{}".format(action.linear.x, action.angular.z))
+    rospy.logdebug("TurtleBot2 Base Twist Cmd>>\nlinear: {}\nangular{}".format(action[0], action[1]))
+    cmd_vel = Twist()
+    cmd_vel.linear.x = action[0]
+    cmd_vel.angular.z = action[1]
     self._check_publishers_connection()
     rate = rospy.Rate(100)
     for _ in range(10):
-      self._cmd_vel_pub.publish(action)
-      rospy.logdebug("cmd_vel: \nlinear: {}\nangular{}".format(action.linear.x, action.angular.z))
+      self._cmd_vel_pub.publish(cmd_vel)
+      rospy.logdebug("cmd_vel: \nlinear: {}\nangular{}".format(cmd_vel.linear.x,
+                                                               cmd_vel.angular.z))
       rate.sleep()
 
   def _get_observation(self):

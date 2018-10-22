@@ -11,30 +11,24 @@ from geometry_msgs.msg import Twist
 
 
 class TurtlebotRobotEnv(GymGazeboEnv):
-  """Superclass for all TurtleBot environments.
+  """
+  Superclass for all TurtleBot environments. Contains all sensors and actuators methods.
   """
 
   def __init__(self):
     """
     Initializes a new TurtleBot2Env environment.
     
-    To check any topic we need to have the simulations running, we need to do two things:
-    1) Unpause the simulation: without that the stream of data doesnt flow. This is for simulations
-    that are pause for whatever the reason
-    2) If the simulation was running already for some reason, we need to reset the controlers.
-    This has to do with the fact that some plugins with tf, dont understand the reset of the simulation and need to be reseted to work properly.
-    
-    The sensors accesible are the ones considered usefull for AI learning.
     Sensor Topic List:
-    * /odom : Odometry readings of the Base of the Robot
+    * /odom : Odometry readings of the base of the robot
     * /camera/depth/image_raw: 2d Depth image of the depth sensor.
     * /camera/depth/points: Pointcloud sensor readings
     * /camera/rgb/image_raw: RGB camera
     * /kobuki/laser/scan: Laser Readings
-        
-    Actuators Topic List: /mobile_base/commands/velocity, 
-        
-    Args:
+    * /gazebo/model_states: Gazebo simulated model states
+
+    Actuators Topic List: 
+    * /mobile_base/commands/velocity: velocity command for driving the base of the robot
     """
     rospy.logdebug("Start TurtleBotEnv INIT...")
     # Variables that we give through the constructor.

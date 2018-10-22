@@ -5,7 +5,15 @@ from gym.utils import seeding
 from .gazebo_connection import GazeboConnection
 
 class GymGazeboEnv(gym.Env):
-
+  """
+  Gazebo env converts standard openai gym methods into Gazebo commands
+  
+  To check any topic we need to have the simulations running, we need to do two things:
+    1)Unpause the simulation: without that the stream of data doesnt flow. This is for simulations
+      that are pause for whatever the reason
+    2)If the simulation was running already for some reason, we need to reset the controlers.
+      This has to do with the fact that some plugins with tf, dont understand the reset of the simulation and need to be reseted to work properly.
+  """
   def __init__(self, start_init_physics_parameters=True, reset_world_or_sim="WORLD"):
     # To reset Simulations
     rospy.logdebug("START init RobotGazeboEnv")
@@ -20,6 +28,7 @@ class GymGazeboEnv(gym.Env):
 
   def step(self, action):
     """
+    Gives env an action to enter the next state,
     obs, reward, done, info = env.step(action)
     """
     # Convert the action num to movement action
