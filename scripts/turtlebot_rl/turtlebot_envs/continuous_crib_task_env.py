@@ -7,16 +7,16 @@ import math
 import random
 import tf
 from gym import spaces
-from .turtlebot_robot_env import TurtlebotRobotEnv
+from .turtlebot_robot_env_devel import TurtlebotRobotEnv
 from gym.envs.registration import register
 
 from gazebo_msgs.msg import ModelState
-from geometry_msgs.msg import Pose, Twist, Point
+from geometry_msgs.msg import Pose, Twist
 
 # Register crib env 
 register(
-  id='TurtlebotCrib-v0',
-  entry_point='turtlebot_envs.crib_task_env:CribTaskEnv',
+  id='TurtlebotCrib-v2',
+  entry_point='turtlebot_envs.continuous_crib_task_env:CribTaskEnv',
   timestep_limit=1000000,
 )
 
@@ -41,7 +41,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     # action space
     self.high_action = np.array([self.max_linear_speed, self.max_angular_speed])
     self.low_action = -self.high_action
-    self.action_space = spaces.Box(self.low_action, self.high_action, shape=(2,))
+    self.action_space = spaces.Box(low=self.low_action, high=self.high_action)
     # observation space
     self.high_observation = np.array(
       [
@@ -99,6 +99,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     model_state.reference_frame = "world"
     # publish model_state to set bot
     self.set_model_state_publisher.publish(model_state)
+    time.sleep(0.1)
 
     self.init_position = np.array([x, y])
     self.previous_position = self.init_position
@@ -168,7 +169,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     
     return self.observation
 
-  def _announce_information(self):
+  def _post_information(self):
     """
     Return:
       info: {"init_position", "goal_position", "current_position", "previous_position"}
@@ -182,7 +183,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     
     return self.info
 
-  def _is_done(self, obs, goal):
+  def _is_done(self):
     """
     If TurtleBot moves into a small circle around the goal, return done==True
     Args:
@@ -191,7 +192,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     Return:
       episode_done
     """
-    if np.linalg.norm(obs[:2]-goal) <= 0.04: # reaching goal position
+    if np.linalg.norm(self.current_position-self.goal_position) <= 0.04: # reaching goal position
       self._episode_done = True
       rospy.loginfo("Turtlebot reached destination !!!")
     else:
@@ -213,7 +214,6 @@ class CribTaskEnv(TurtlebotRobotEnv):
     rospy.logdebug("reward = {}".format(reward))
     
     return reward
-
 
 
 def _check_publishers_connection(self):
