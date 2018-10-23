@@ -38,60 +38,76 @@ def grad(model, inputs, targets):
     loss_value = loss(model, inputs, targets)
   return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
+def obs_to_state(obs, info):
+  """
+  This function converts observation into state
+  Args: 
+    obs: [x, y, v_x, v_y, cos(ori), sin(ori), v_ori]
+    info: {"goal_position", ...}
+  Returns:
+    state: [dx, dy, v_x, v_y, cos(alpha), sin(alpha), v_ori]
+  """
+  state = obs
+  state[:2] = info["goal_position"] - obs[:2] # distance
+  state[4:6] = alpha
+
+  return state
+
 if __name__ == "__main__":
   # init node
-  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.DEBUG)
+  rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.WARN)
   # create env
-  env_name = "TurtlebotCrib-v0"
+  env_name = "CribNav-v0"
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")
   main_start = time.time()
   # set parameters
-  num_actions = env.action_space.n
+  num_actions = env.action_space.shape[0]
   num_states = env.observation_space.shape[0]
   num_episodes = 128
   num_steps = 256
   num_sequences = 256
   len_horizon = 1024 # number of time steps the controller considers
-  batch_size = 2048
-  
-  stacs_memory = []
-  nextstates_memory = []
+  batch_size = 2048  
   # setup model
   model = tf.keras.Sequential([
-    tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(num_states+1,)),  # input shape required
-    tf.keras.layers.Dense(16, activation=tf.nn.relu),
+    tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(num_states+num_actions,)),  # input shape required
+    tf.keras.layers.Dense(32, activation=tf.nn.relu),
     tf.keras.layers.Dense(num_states)
   ])
-  # set training parameters
-  num_epochs = 512
-  num_iters = 32
+  stacs_memory = []
+  nextstates_memory = []
+  memory_size = 2**16
 
   # Random Sampling
+  sample_size = 50000
   rs_start = time.time()
-  for i in range(num_epochs):
-    print("Sampling: {:03d}".format(i+1))
-    state, info = env.reset()
-    done = False
-    state = state.astype(np.float32)
-    for j in range(num_iters):
-      action = random.randrange(num_actions)
-      next_state, _, done, info = env.step(action)
-      print("Sampling {}, Step: {}, current_position: {}, goal_position: {}, done: {}".format(
-        i,
-        j,
-        info["current_position"],
-        info["goal_position"],
-        done
-      ))
-      next_state = next_state.astype(np.float32)
-      stac = np.concatenate((state, np.array([action]))).astype(np.float32)
-      stacs_memory.append(stac)
-      nextstates_memory.append(next_state.astype(np.float32))
-      state = next_state
+  rospy.logdebug("Start random sampling...")
+  sample_index = 0
+  obs, info = env.reset()
+  done = False
+  state = obs_to_state(obs, info) # to be worked out
+  while sample_index < sample_size:
+    action = env.action_space.sample()
+    obs, _, done, info = env.step(action)
+    next_state = obs_to_state(obs, info) # to be worked out
+    # append action-state and next state in to the memories
+    stac = np.concatenate((state, action)).astype(np.float32)
+    stacs_memory.append(stac)
+    nextstates_memory.append(next_state.astype(np.float32))
+    print("Sample: {} \ncurrent_state: {} \naction: {}, \nnext_state: {}".format(sample_index+1,
+                                                                                 state,
+                                                                                 action,
+                                                                                 next_state))
+    state = next_state
+    sample_index += 1
+    if not sample_index % 100:
+      obs, info = env.reset()
+      done = False
+      state = obs_to_state(obs, info) # to be worked out
   rs_end = time.time()
   print("Random sampling takes: {:.4f}".format(rs_end-rs_start))
-      
+
   # Train random sampled dataset
   dataset = utils.create_dataset(
     input_features=np.array(stacs_memory),
