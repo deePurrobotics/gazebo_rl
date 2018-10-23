@@ -7,7 +7,7 @@ import math
 import random
 import tf
 from gym import spaces
-from .turtlebot_robot_env_devel import TurtlebotRobotEnv
+from .turtlebot_robot_env import TurtlebotRobotEnv
 from gym.envs.registration import register
 
 from gazebo_msgs.msg import ModelState
@@ -15,17 +15,15 @@ from geometry_msgs.msg import Pose, Twist
 
 # Register crib env 
 register(
-  id='TurtlebotCrib-v2',
-  entry_point='turtlebot_envs.continuous_crib_task_env:CribTaskEnv',
-  timestep_limit=1000000,
-)
+  id='CribNav-v0',
+  entry_point='envs.crib_nav_task_env:CribNavTaskEnv')
 
 
-class CribTaskEnv(TurtlebotRobotEnv):
+class CribNavTaskEnv(TurtlebotRobotEnv):
   def __init__(self):
     """
     This task-env is designed for TurtleBot navigating to a random placed goal
-    in a walled world. Action and state space will be both set to continuous. 
+    in world of walled crib. Action and state space will be both set to continuous. 
     """
     # action limits
     self.max_linear_speed = 2.0
@@ -70,7 +68,7 @@ class CribTaskEnv(TurtlebotRobotEnv):
     # self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
     # Here we will add any init functions prior to starting the MyRobotEnv
-    super(CribTaskEnv, self).__init__()
+    super(CribNavTaskEnv, self).__init__()
 
   def _set_init(self):
     """ 

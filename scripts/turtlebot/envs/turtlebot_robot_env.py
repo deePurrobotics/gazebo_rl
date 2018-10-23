@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import rospy
-from .gym_gazebo_env_devel import GymGazeboEnv
+from .gym_gazebo_env import GymGazeboEnv
 from std_msgs.msg import Float64
 from sensor_msgs.msg import Image, LaserScan, PointCloud2
 from gazebo_msgs.msg import ModelStates

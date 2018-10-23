@@ -1,2 +1,0 @@
-model_checkpoint_path: "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot_rl/20181010/ckpt-1"
-all_model_checkpoint_paths: "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot_rl/20181010/ckpt-1"
