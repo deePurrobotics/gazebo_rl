@@ -149,7 +149,7 @@ if __name__ == "__main__":
   ])
   stacs_memory = []
   nextstates_memory = []
-  memory_size = 2**10
+  memory_size = 2**16
 
   # Random Sampling
   sample_size = int(memory_size / 2)
@@ -183,7 +183,7 @@ if __name__ == "__main__":
   print("Random sampling takes: {:.4f}".format(rs_end-rs_start))
 
   # Train random sampled dataset
-  num_epochs = 16
+  num_epochs = 64
   dataset = utils.create_dataset(
     input_features=np.array(stacs_memory),
     output_labels=np.array(nextstates_memory),
@@ -265,7 +265,7 @@ if __name__ == "__main__":
         stacs_memory.append(stac)
       else:
         id_pop = find_centered(stacs_memory)
-        stac_memory.pop(id_pop)
+        stacs_memory.pop(id_pop)
         stacs_memory.append(stac)
       if len(nextstates_memory) < memory_size:
         nextstates_memory.append(next_state)
