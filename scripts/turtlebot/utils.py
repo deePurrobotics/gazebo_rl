@@ -116,3 +116,20 @@ def greedy_action(model, num_actions, state, goal):
   optimal_action = np.argmax(reward_list) 
 
   return optimal_action
+
+def compute_reward(state):
+  """
+  Compute reward based on current state. 
+  This function should be identical with the one in task env
+  Args: 
+    state: [dx, dy, v_x, v_y, cos(ori), sin(ori), v_ori, cos(goal), sin(goal)]
+  Returns:
+    reward
+  """
+  if np.linalg.norm(state[:2]) <= 0.1:
+    reward = 100
+  else:
+    reward = 0
+
+  return reward
+    

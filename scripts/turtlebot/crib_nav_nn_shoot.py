@@ -66,7 +66,7 @@ def obs_to_state(obs, info):
 
   return state
 
-def generate_action_sequence(num_sequences, len_horizon, env):
+def generate_action_sequences(num_sequences, len_horizon, env):
   """ 
   Generate random action sequences with limited horizon
   Args:
@@ -76,12 +76,35 @@ def generate_action_sequence(num_sequences, len_horizon, env):
   Returns:
     action_sequences: in shape of (num_sequences, len_horizon)
   """
-  action_sequences = np.zeros((num_sequences, len_horizon))
+  action_sequences = np.zeros((num_sequences, len_horizon, env.action_space.shape[0]))
   for s in range(num_sequences):
     for h in range(len_horizon):
       action_sequences[s,h] = env.action_space.sample() # random action
 
   return action_sequences
+
+def shoot_action(model, action_sequences, state, goal):
+  """ Find an action with most reward using random shoot
+  """
+  sequence_rewards = np.zeros(action_sequences.shape[0])
+  # Compute reward for every sequence 
+  for seq in range(action_sequences.shape[0]):
+    old_state = state
+    # print("old_state: {}".format(old_state)) # debug
+    reward_in_horizon = 0
+    for hor in range(action_sequences.shape[1]):
+      action = action_sequences[seq,hor]
+      stac = np.concatenate((old_state, action)).reshape(1,-1).astype(np.float32) # state-action pair
+      new_state = model(stac)
+      reward = compute_reward(new_state)
+      reward_in_horizon += reward
+      old_state = new_state
+      sequence_rewards[seq] = reward_in_horizon
+
+    idx = np.argmax(sequence_rewards) # action sequence index with max reward
+    optimal_action = int(action_sequences[idx,0]) # take first action of each sequence
+
+    return optimal_action
 
 if __name__ == "__main__":
   # init node
@@ -193,6 +216,8 @@ if __name__ == "__main__":
   print("Random samples training end! It took {:.4f} seconds".format(rst_end-rst_start))
 
   # random shoot control with new samples
+  num_sequences = 128
+  len_horizon = num_steps
   reward_storage = []
   for episode in range(num_episodes):
     obs, info = env.reset()
@@ -202,10 +227,10 @@ if __name__ == "__main__":
     done = False
     # compute control policies as long as sampling more
     for step in range(num_steps):
-      action_sequences = utils.generate_action_sequence(
+      action_sequences = generate_action_sequences(
         num_sequences,
         len_horizon,
-        num_actions
+        env
       )
       action = utils.shoot_action(
         model,

@@ -194,7 +194,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     Return:
       episode_done
     """
-    if np.linalg.norm(self.current_position-self.goal_position) <= 0.04: # reaching goal position
+    if np.linalg.norm(self.current_position-self.goal_position) <= 0.1: # reaching goal position
       self._episode_done = True
       rospy.loginfo("Turtlebot reached destination !!!")
     else:
