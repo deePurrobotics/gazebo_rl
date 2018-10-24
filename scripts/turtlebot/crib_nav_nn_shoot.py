@@ -23,7 +23,7 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 
-import turtlebot_envs.crib_task_env
+import envs.crib_nav_task_env
 import utils
 
 tf.enable_eager_execution()
@@ -45,11 +45,22 @@ def obs_to_state(obs, info):
     obs: [x, y, v_x, v_y, cos(ori), sin(ori), v_ori]
     info: {"goal_position", ...}
   Returns:
-    state: [dx, dy, v_x, v_y, cos(alpha), sin(alpha), v_ori]
+    state: [dx, dy, v_x, v_y, cos(ori), sin(ori), v_ori, cos(goal), sin(goal)]
   """
-  state = obs
+  # create state based on obs
+  state = np.zeros(obs.shape[0]+2)
+  state[:obs.shape[0]] = obs
+  # compute angle(theta) between vector of "robot to goal" and "x-axis" of world
+  robot_position = obs[:2]
+  goal_position = info["goal_position"]
+  vec_x = np.array([1, 0])
+  vec_y = np.array([0, 1])
+  vec_r2g = goal_position - robot_position
+  cos_theta = np.dot(vec_r2g, vec_x) / (np.linalg.norm(vec_r2g)*np.linalg.norm(vec_x))
+  sin_theta = np.dot(vec_r2g, vec_y) / (np.linalg.norm(vec_r2g)*np.linalg.norm(vec_y))
+  # append new states
   state[:2] = info["goal_position"] - obs[:2] # distance
-  state[4:6] = alpha
+  state[-2:] = [cos_theta, sin_theta]
 
   return state
 
@@ -63,7 +74,7 @@ if __name__ == "__main__":
   main_start = time.time()
   # set parameters
   num_actions = env.action_space.shape[0]
-  num_states = env.observation_space.shape[0]
+  num_states = env.observation_space.shape[0] + 2 # add cos and sin of vector from bot to goal
   num_episodes = 128
   num_steps = 256
   num_sequences = 256
@@ -80,7 +91,7 @@ if __name__ == "__main__":
   memory_size = 2**16
 
   # Random Sampling
-  sample_size = 50000
+  sample_size = 500
   rs_start = time.time()
   rospy.logdebug("Start random sampling...")
   sample_index = 0
@@ -108,124 +119,124 @@ if __name__ == "__main__":
   rs_end = time.time()
   print("Random sampling takes: {:.4f}".format(rs_end-rs_start))
 
-  # Train random sampled dataset
-  dataset = utils.create_dataset(
-    input_features=np.array(stacs_memory),
-    output_labels=np.array(nextstates_memory),
-    batch_size=batch_size,
-    num_epochs=num_epochs
-  )
-  # for epoch in range(num_epochs):
+  # # Train random sampled dataset
+  # dataset = utils.create_dataset(
+  #   input_features=np.array(stacs_memory),
+  #   output_labels=np.array(nextstates_memory),
+  #   batch_size=batch_size,
+  #   num_epochs=num_epochs
+  # )
+  # # for epoch in range(num_epochs):
+  # #   for i, (x, y) in enumerate(dataset):
+  # #     print("epoch: {:03d}, iter: {:03d}".format(epoch, i))
+  # #     print()
+  # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+  # global_step = tf.train.get_or_create_global_step()
+  # loss_value, grads = grad(
+  #   model,
+  #   np.array(stacs_memory),
+  #   np.array(nextstates_memory)
+  # )
+  # # create check point
+  # model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot_rl"
+  # today = datetime.datetime.today().strftime("%Y%m%d")
+  # checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
+  # if not os.path.exists(os.path.dirname(checkpoint_prefix)):
+  #   try:
+  #     os.makedirs(checkpoint_prefix)
+  #   except OSError as exc: # Guard against race condition
+  #     if exc.errno != errno.EEXIST:
+  #       raise
+  # root = tf.train.Checkpoint(
+  #   optimizer=optimizer,
+  #   model=model,
+  #   optimizer_step=global_step
+  # )
+  # root.save(file_prefix=checkpoint_prefix)
+  # # train random samples
+  # rst_start = time.time()
+  # for epoch in range(int(num_epochs/4)):
+  #   epoch_loss_avg = tfe.metrics.Mean()
+  #   for i, (x,y) in enumerate(dataset):
+  #     batch_start = time.time()
+  #     # optimize model
+  #     loss_value, grads = grad(model, x, y)
+  #     optimizer.apply_gradients(
+  #     zip(grads, model.variables),
+  #       global_step
+  #     )
+  #     # track progress
+  #     epoch_loss_avg(loss_value)  # add current batch loss
+  #     # log training
+  #     print("Epoch {:03d}: Iteration: {:03d}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
+  #     batch_end = time.time()
+  #     print("Batch {} training takes: {:.4f}".format(i, batch_end-batch_start))
+  # rst_end = time.time()
+  # print("Random samples training takes {:.4f}".format(rst_end-rst_start))
+
+  # # Control with more samples
+  # reward_storage = []
+  # for episode in range(num_episodes):
+  #   state, info = env.reset()
+  #   state = state.astype(np.float32)
+  #   goal = info["goal_position"]
+  #   total_reward = 0
+  #   done = False
+  #   # compute control policies as long as sampling more
+  #   for step in range(num_steps):
+  #     action_sequences = utils.generate_action_sequence(
+  #       num_sequences,
+  #       len_horizon,
+  #       num_actions
+  #     )
+  #     action = utils.shoot_action(
+  #       model,
+  #       action_sequences,
+  #       state,
+  #       goal
+  #     )
+  #     next_state, reward, done, info = env.step(action)
+  #     next_state = next_state.astype(np.float32)
+  #     stac = np.concatenate((state, np.array([action]))).astype(np.float32)
+  #     stacs_memory.append(stac)
+  #     nextstates_memory.append(next_state)
+  #     total_reward += reward
+  #     state = next_state
+  #     print("Current position: {}, Goal position: {}, Reward: {:.4f}".format(
+  #       info["current_position"],
+  #       info["goal_position"],
+  #       reward
+  #     ))
+  #     if done:
+  #       break
+  #   reward_storage.append(total_reward)
+  #   # Train with samples at the end of every episode
+  #   dataset = utils.create_dataset(
+  #     np.array(stacs_memory),
+  #     np.array(nextstates_memory),
+  #     batch_size=batch_size,
+  #     num_epochs=4
+  #   )
+  #   ep_start = time.time()
   #   for i, (x, y) in enumerate(dataset):
-  #     print("epoch: {:03d}, iter: {:03d}".format(epoch, i))
-  #     print()
-  optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-  global_step = tf.train.get_or_create_global_step()
-  loss_value, grads = grad(
-    model,
-    np.array(stacs_memory),
-    np.array(nextstates_memory)
-  )
-  # create check point
-  model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot_rl"
-  today = datetime.datetime.today().strftime("%Y%m%d")
-  checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
-  if not os.path.exists(os.path.dirname(checkpoint_prefix)):
-    try:
-      os.makedirs(checkpoint_prefix)
-    except OSError as exc: # Guard against race condition
-      if exc.errno != errno.EEXIST:
-        raise
-  root = tf.train.Checkpoint(
-    optimizer=optimizer,
-    model=model,
-    optimizer_step=global_step
-  )
-  root.save(file_prefix=checkpoint_prefix)
-  # train random samples
-  rst_start = time.time()
-  for epoch in range(int(num_epochs/4)):
-    epoch_loss_avg = tfe.metrics.Mean()
-    for i, (x,y) in enumerate(dataset):
-      batch_start = time.time()
-      # optimize model
-      loss_value, grads = grad(model, x, y)
-      optimizer.apply_gradients(
-      zip(grads, model.variables),
-        global_step
-      )
-      # track progress
-      epoch_loss_avg(loss_value)  # add current batch loss
-      # log training
-      print("Epoch {:03d}: Iteration: {:03d}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
-      batch_end = time.time()
-      print("Batch {} training takes: {:.4f}".format(i, batch_end-batch_start))
-  rst_end = time.time()
-  print("Random samples training takes {:.4f}".format(rst_end-rst_start))
+  #     loss_value, grads = grad(model, x, y)
+  #     optimizer.apply_gradients(
+  #       zip(grads, model.variables),
+  #       global_step
+  #     )
+  #     print("Batch: {:04d}, Loss: {:.4f}".format(i, loss_value))
+  #   ep_end=time.time()
+  #   print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
 
-  # Control with more samples
-  reward_storage = []
-  for episode in range(num_episodes):
-    state, info = env.reset()
-    state = state.astype(np.float32)
-    goal = info["goal_position"]
-    total_reward = 0
-    done = False
-    # compute control policies as long as sampling more
-    for step in range(num_steps):
-      action_sequences = utils.generate_action_sequence(
-        num_sequences,
-        len_horizon,
-        num_actions
-      )
-      action = utils.shoot_action(
-        model,
-        action_sequences,
-        state,
-        goal
-      )
-      next_state, reward, done, info = env.step(action)
-      next_state = next_state.astype(np.float32)
-      stac = np.concatenate((state, np.array([action]))).astype(np.float32)
-      stacs_memory.append(stac)
-      nextstates_memory.append(next_state)
-      total_reward += reward
-      state = next_state
-      print("Current position: {}, Goal position: {}, Reward: {:.4f}".format(
-        info["current_position"],
-        info["goal_position"],
-        reward
-      ))
-      if done:
-        break
-    reward_storage.append(total_reward)
-    # Train with samples at the end of every episode
-    dataset = utils.create_dataset(
-      np.array(stacs_memory),
-      np.array(nextstates_memory),
-      batch_size=batch_size,
-      num_epochs=4
-    )
-    ep_start = time.time()
-    for i, (x, y) in enumerate(dataset):
-      loss_value, grads = grad(model, x, y)
-      optimizer.apply_gradients(
-        zip(grads, model.variables),
-        global_step
-      )
-      print("Batch: {:04d}, Loss: {:.4f}".format(i, loss_value))
-    ep_end=time.time()
-    print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
-
-    main_end = time.time()
-    print(
-      "{:d} Random Samples was trained {:d} epochs",
-      "\n{:d} Controlled Samples was trained {:d} epochs",
-      "\nTotal execution time: {:.4f}".format(
-        num_epochs*num_iters,
-        num_epochs/4,
-        num_episodes*num_steps,
-        num_episodes*4,
-        main_end-main_start
-      )
-    )
+  #   main_end = time.time()
+  #   print(
+  #     "{:d} Random Samples was trained {:d} epochs",
+  #     "\n{:d} Controlled Samples was trained {:d} epochs",
+  #     "\nTotal execution time: {:.4f}".format(
+  #       num_epochs*num_iters,
+  #       num_epochs/4,
+  #       num_episodes*num_steps,
+  #       num_episodes*4,
+  #       main_end-main_start
+  #     )
+  #   )
