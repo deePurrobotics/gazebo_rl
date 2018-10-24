@@ -98,7 +98,7 @@ def shoot_action(model, action_sequences, state, goal):
       new_state = model(stac)
       reward = utils.compute_reward(new_state[0])
       reward_in_horizon += reward
-      old_state = new_state
+      old_state = new_state[0]
     sequence_rewards[seq] = reward_in_horizon
 
     good_action = action_sequences[np.argmax(sequence_rewards), 0]
@@ -149,7 +149,7 @@ if __name__ == "__main__":
   ])
   stacs_memory = []
   nextstates_memory = []
-  memory_size = 2**16
+  memory_size = 2**10
 
   # Random Sampling
   sample_size = int(memory_size / 2)
@@ -183,7 +183,7 @@ if __name__ == "__main__":
   print("Random sampling takes: {:.4f}".format(rs_end-rs_start))
 
   # Train random sampled dataset
-  num_epochs = 64
+  num_epochs = 16
   dataset = utils.create_dataset(
     input_features=np.array(stacs_memory),
     output_labels=np.array(nextstates_memory),
@@ -251,14 +251,14 @@ if __name__ == "__main__":
         len_horizon,
         env
       )
-      action = utils.shoot_action(
+      action = shoot_action(
         model,
         action_sequences,
         state,
         goal
       )
-      next_state, reward, done, info = env.step(action)
-      next_state = next_state.astype(np.float32)
+      obs, reward, done, info = env.step(action)
+      next_state = obs_to_state(obs, info)
       stac = np.concatenate((state, action)).astype(np.float32)
       # incrementally update memories
       if len(stacs_memory) < memory_size:
