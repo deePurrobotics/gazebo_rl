@@ -96,15 +96,14 @@ def shoot_action(model, action_sequences, state, goal):
       action = action_sequences[seq,hor]
       stac = np.concatenate((old_state, action)).reshape(1,-1).astype(np.float32) # state-action pair
       new_state = model(stac)
-      reward = compute_reward(new_state)
+      reward = utils.compute_reward(new_state[0])
       reward_in_horizon += reward
       old_state = new_state
       sequence_rewards[seq] = reward_in_horizon
 
-    idx = np.argmax(sequence_rewards) # action sequence index with max reward
-    optimal_action = int(action_sequences[idx,0]) # take first action of each sequence
+    good_action = action_sequences[np.argmax(sequence_rewards), 0]
 
-    return optimal_action
+    return good_action
 
 if __name__ == "__main__":
   # init node
