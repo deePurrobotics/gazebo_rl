@@ -66,6 +66,23 @@ def obs_to_state(obs, info):
 
   return state
 
+def generate_action_sequence(num_sequences, len_horizon, env):
+  """ 
+  Generate random action sequences with limited horizon
+  Args:
+    num_sequences
+    len_horizon: length of each sequence
+    env: gym environment
+  Returns:
+    action_sequences: in shape of (num_sequences, len_horizon)
+  """
+  action_sequences = np.zeros((num_sequences, len_horizon))
+  for s in range(num_sequences):
+    for h in range(len_horizon):
+      action_sequences[s,h] = env.action_space.sample() # random action
+
+  return action_sequences
+
 if __name__ == "__main__":
   # init node
   rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.WARN)
