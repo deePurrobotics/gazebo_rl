@@ -62,6 +62,7 @@ def obs_to_state(obs, info):
   # append new states
   state[:2] = info["goal_position"] - obs[:2] # distance
   state[-2:] = [cos_theta, sin_theta]
+  state = state.astype(np.float32)
 
   return state
 
@@ -174,59 +175,59 @@ if __name__ == "__main__":
   rst_end = time.time()
   print("Random samples training end! It took {:.4f} seconds".format(rst_end-rst_start))
 
-  # # Control with more samples
-  # reward_storage = []
-  # for episode in range(num_episodes):
-  #   state, info = env.reset()
-  #   state = state.astype(np.float32)
-  #   goal = info["goal_position"]
-  #   total_reward = 0
-  #   done = False
-  #   # compute control policies as long as sampling more
-  #   for step in range(num_steps):
-  #     action_sequences = utils.generate_action_sequence(
-  #       num_sequences,
-  #       len_horizon,
-  #       num_actions
-  #     )
-  #     action = utils.shoot_action(
-  #       model,
-  #       action_sequences,
-  #       state,
-  #       goal
-  #     )
-  #     next_state, reward, done, info = env.step(action)
-  #     next_state = next_state.astype(np.float32)
-  #     stac = np.concatenate((state, np.array([action]))).astype(np.float32)
-  #     stacs_memory.append(stac)
-  #     nextstates_memory.append(next_state)
-  #     total_reward += reward
-  #     state = next_state
-  #     print("Current position: {}, Goal position: {}, Reward: {:.4f}".format(
-  #       info["current_position"],
-  #       info["goal_position"],
-  #       reward
-  #     ))
-  #     if done:
-  #       break
-  #   reward_storage.append(total_reward)
-  #   # Train with samples at the end of every episode
-  #   dataset = utils.create_dataset(
-  #     np.array(stacs_memory),
-  #     np.array(nextstates_memory),
-  #     batch_size=batch_size,
-  #     num_epochs=4
-  #   )
-  #   ep_start = time.time()
-  #   for i, (x, y) in enumerate(dataset):
-  #     loss_value, grads = grad(model, x, y)
-  #     optimizer.apply_gradients(
-  #       zip(grads, model.variables),
-  #       global_step
-  #     )
-  #     print("Batch: {:04d}, Loss: {:.4f}".format(i, loss_value))
-  #   ep_end=time.time()
-  #   print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
+  # random shoot control with new samples
+  reward_storage = []
+  for episode in range(num_episodes):
+    obs, info = env.reset()
+    state = obs_to_state(obs, info)
+    goal = info["goal_position"]
+    total_reward = 0
+    done = False
+    # compute control policies as long as sampling more
+    for step in range(num_steps):
+      action_sequences = utils.generate_action_sequence(
+        num_sequences,
+        len_horizon,
+        num_actions
+      )
+      action = utils.shoot_action(
+        model,
+        action_sequences,
+        state,
+        goal
+      )
+      next_state, reward, done, info = env.step(action)
+      next_state = next_state.astype(np.float32)
+      stac = np.concatenate((state, np.array([action]))).astype(np.float32)
+      stacs_memory.append(stac)
+      nextstates_memory.append(next_state)
+      total_reward += reward
+      state = next_state
+      print("Current position: {}, Goal position: {}, Reward: {:.4f}".format(
+        info["current_position"],
+        info["goal_position"],
+        reward
+      ))
+      if done:
+        break
+    reward_storage.append(total_reward)
+    # Train with samples at the end of every episode
+    dataset = utils.create_dataset(
+      np.array(stacs_memory),
+      np.array(nextstates_memory),
+      batch_size=batch_size,
+      num_epochs=4
+    )
+    ep_start = time.time()
+    for i, (x, y) in enumerate(dataset):
+      loss_value, grads = grad(model, x, y)
+      optimizer.apply_gradients(
+        zip(grads, model.variables),
+        global_step
+      )
+      print("Batch: {:04d}, Loss: {:.4f}".format(i, loss_value))
+    ep_end=time.time()
+    print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
 
   #   main_end = time.time()
   #   print(
