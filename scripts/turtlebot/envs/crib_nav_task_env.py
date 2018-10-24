@@ -84,7 +84,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     # set turtlebot inside crib, away from crib edges
     x = random.uniform(-self.max_x+1, self.max_x-1)
     y = random.uniform(-self.max_y+1, self.max_y-1)
-    w = random.uniform(-math.pi, math.pi)    
+    w = random.uniform(-1.0, 1.0)    
     model_state = ModelState()
     model_state.model_name = "mobile_base"
     model_state.pose.position.x = x
@@ -92,7 +92,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     model_state.pose.position.z = 0
     model_state.pose.orientation.x = 0
     model_state.pose.orientation.y = 0
-    model_state.pose.orientation.z = 1
+    model_state.pose.orientation.z = math.sqrt(1 - w**2)
     model_state.pose.orientation.w = w
     model_state.reference_frame = "world"
     # publish model_state to set bot
