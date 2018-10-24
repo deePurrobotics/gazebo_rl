@@ -99,11 +99,31 @@ def shoot_action(model, action_sequences, state, goal):
       reward = utils.compute_reward(new_state[0])
       reward_in_horizon += reward
       old_state = new_state
-      sequence_rewards[seq] = reward_in_horizon
+    sequence_rewards[seq] = reward_in_horizon
 
     good_action = action_sequences[np.argmax(sequence_rewards), 0]
 
     return good_action
+
+def find_centered(memory):
+  """
+  Imagine the whole memory is a black hole. 
+  Find index of the instance that is nearest to the center of the memory
+  Args:
+    memory: list of all memories
+  Returns:
+    index: index of the instance nearest to memory center
+  """
+  memory_array = np.array(memory)
+  center = np.average(memory_array, axis=0)
+  smallest_dist = np.inf
+  for i, m in enumerate(memory_array):
+    dist = np.linalg.norm(m-center)
+    if dist <= smallest_dist:
+      smallest_dist = dist
+      index = i
+
+  return index
 
 if __name__ == "__main__":
   # init node
@@ -132,7 +152,7 @@ if __name__ == "__main__":
   memory_size = 2**16
 
   # Random Sampling
-  sample_size = 50000
+  sample_size = int(memory_size / 2)
   rs_start = time.time()
   rospy.logdebug("Start random sampling...")
   sample_index = 0
@@ -239,16 +259,28 @@ if __name__ == "__main__":
       )
       next_state, reward, done, info = env.step(action)
       next_state = next_state.astype(np.float32)
-      stac = np.concatenate((state, np.array([action]))).astype(np.float32)
-      stacs_memory.append(stac)
-      nextstates_memory.append(next_state)
+      stac = np.concatenate((state, action)).astype(np.float32)
+      # incrementally update memories
+      if len(stacs_memory) < memory_size:
+        stacs_memory.append(stac)
+      else:
+        id_pop = find_centered(stacs_memory)
+        stac_memory.pop(id_pop)
+        stacs_memory.append(stac)
+      if len(nextstates_memory) < memory_size:
+        nextstates_memory.append(next_state)
+      else:
+        id_pop = find_centered(nextstates_memory)
+        nextstates_memory.pop(id_pop)
+        nextstates_memory.append(next_state)
       total_reward += reward
       state = next_state
-      print("Current position: {}, Goal position: {}, Reward: {:.4f}".format(
-        info["current_position"],
-        info["goal_position"],
-        reward
-      ))
+      print(
+        bcolors.OKGREEN, "Episode: {}, Step: {}".format(episode, step), bcolors.ENDC,
+        "\nCurrent position: {}".format(info["current_position"]),
+        "\nGoal position: {}".format(info["goal_position"]),
+        bcolors.BOLD, "\nReward: {:.4f}".format(reward), bcolors.ENDC
+      )
       if done:
         break
     reward_storage.append(total_reward)
@@ -270,15 +302,11 @@ if __name__ == "__main__":
     ep_end=time.time()
     print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
 
-  #   main_end = time.time()
-  #   print(
-  #     "{:d} Random Samples was trained {:d} epochs",
-  #     "\n{:d} Controlled Samples was trained {:d} epochs",
-  #     "\nTotal execution time: {:.4f}".format(
-  #       num_epochs*num_iters,
-  #       num_epochs/4,
-  #       num_episodes*num_steps,
-  #       num_episodes*4,
-  #       main_end-main_start
-  #     )
-  #   )
+    main_end = time.time()
+    print(
+      bcolors.HEADER,
+      "{:d} Random Samples was trained {:d} epochs".format(sample_size, num_epochs),
+      "\n{:d} new samples was collected and all samples were trained {:d} epochs".format(num_episodes*num_steps, num_episodes*4),
+      "\nTotal execution time: {:.4f}".format(main_end-main_start),
+      bcolors.ENDC
+    )
