@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 
 import envs.crib_nav_task_env
 import utils
+from utils import bcolors
 
 tf.enable_eager_execution()
 
@@ -79,7 +80,7 @@ if __name__ == "__main__":
   num_steps = 256
   num_sequences = 256
   len_horizon = 1024 # number of time steps the controller considers
-  batch_size = 2048  
+  batch_size = 4096  
   # setup model
   model = tf.keras.Sequential([
     tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(num_states+num_actions,)),  # input shape required
@@ -91,7 +92,7 @@ if __name__ == "__main__":
   memory_size = 2**16
 
   # Random Sampling
-  sample_size = 500
+  sample_size = 50000
   rs_start = time.time()
   rospy.logdebug("Start random sampling...")
   sample_index = 0
@@ -106,12 +107,14 @@ if __name__ == "__main__":
     stac = np.concatenate((state, action)).astype(np.float32)
     stacs_memory.append(stac)
     nextstates_memory.append(next_state.astype(np.float32))
-    print("Sample: {} \ncurrent_state: {} \naction: {}, \nnext_state: {}".format(sample_index+1,
-                                                                                 state,
-                                                                                 action,
-                                                                                 next_state))
-    state = next_state
+    print(
+      bcolors.OKBLUE, "Sample: {}".format(sample_index+1), bcolors.ENDC,
+      "\ncurrent_state: {}".format(state),
+      "\naction: {}".format(action),
+      "\nnext_state: {}".format(next_state)
+    )
     sample_index += 1
+    state = next_state
     if not sample_index % 100:
       obs, info = env.reset()
       done = False
@@ -119,60 +122,57 @@ if __name__ == "__main__":
   rs_end = time.time()
   print("Random sampling takes: {:.4f}".format(rs_end-rs_start))
 
-  # # Train random sampled dataset
-  # dataset = utils.create_dataset(
-  #   input_features=np.array(stacs_memory),
-  #   output_labels=np.array(nextstates_memory),
-  #   batch_size=batch_size,
-  #   num_epochs=num_epochs
-  # )
-  # # for epoch in range(num_epochs):
-  # #   for i, (x, y) in enumerate(dataset):
-  # #     print("epoch: {:03d}, iter: {:03d}".format(epoch, i))
-  # #     print()
-  # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-  # global_step = tf.train.get_or_create_global_step()
-  # loss_value, grads = grad(
-  #   model,
-  #   np.array(stacs_memory),
-  #   np.array(nextstates_memory)
-  # )
-  # # create check point
-  # model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot_rl"
-  # today = datetime.datetime.today().strftime("%Y%m%d")
-  # checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
-  # if not os.path.exists(os.path.dirname(checkpoint_prefix)):
-  #   try:
-  #     os.makedirs(checkpoint_prefix)
-  #   except OSError as exc: # Guard against race condition
-  #     if exc.errno != errno.EEXIST:
-  #       raise
-  # root = tf.train.Checkpoint(
-  #   optimizer=optimizer,
-  #   model=model,
-  #   optimizer_step=global_step
-  # )
-  # root.save(file_prefix=checkpoint_prefix)
-  # # train random samples
-  # rst_start = time.time()
-  # for epoch in range(int(num_epochs/4)):
-  #   epoch_loss_avg = tfe.metrics.Mean()
-  #   for i, (x,y) in enumerate(dataset):
-  #     batch_start = time.time()
-  #     # optimize model
-  #     loss_value, grads = grad(model, x, y)
-  #     optimizer.apply_gradients(
-  #     zip(grads, model.variables),
-  #       global_step
-  #     )
-  #     # track progress
-  #     epoch_loss_avg(loss_value)  # add current batch loss
-  #     # log training
-  #     print("Epoch {:03d}: Iteration: {:03d}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
-  #     batch_end = time.time()
-  #     print("Batch {} training takes: {:.4f}".format(i, batch_end-batch_start))
-  # rst_end = time.time()
-  # print("Random samples training takes {:.4f}".format(rst_end-rst_start))
+  # Train random sampled dataset
+  num_epochs = 64
+  dataset = utils.create_dataset(
+    input_features=np.array(stacs_memory),
+    output_labels=np.array(nextstates_memory),
+    batch_size=batch_size,
+    num_epochs=num_epochs
+  )
+  optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+  global_step = tf.train.get_or_create_global_step()
+  loss_value, grads = grad(
+    model,
+    np.array(stacs_memory),
+    np.array(nextstates_memory)
+  )
+  # create check point
+  model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/checkpoint"
+  today = datetime.datetime.today().strftime("%Y%m%d")
+  checkpoint_prefix = os.path.join(model_dir, today, "ckpt")
+  if not os.path.exists(os.path.dirname(checkpoint_prefix)):
+    try:
+      os.makedirs(checkpoint_prefix)
+    except OSError as exc: # Guard against race condition
+      if exc.errno != errno.EEXIST:
+        raise
+  root = tf.train.Checkpoint(
+    optimizer=optimizer,
+    model=model,
+    optimizer_step=global_step
+  )
+  root.save(file_prefix=checkpoint_prefix)
+  # start training
+  rst_start = time.time()
+  for epoch in range(num_epochs):
+    epoch_loss_avg = tfe.metrics.Mean()
+    for i, (x,y) in enumerate(dataset):
+      batch_start = time.time()
+      # optimize model
+      loss_value, grads = grad(model, x, y)
+      optimizer.apply_gradients(
+      zip(grads, model.variables),
+        global_step
+      )
+      # track progress
+      epoch_loss_avg(loss_value)  # add current batch loss
+      # log training
+      print("Epoch: {}, Iteration: {}, Loss: {:.3f}".format(epoch, i, epoch_loss_avg.result()))
+      batch_end = time.time()
+      rospy.logdebug("Batch {} training takes: {:.4f}".format(i, batch_end-batch_start))
+  rst_end = time.time()
+  print("Random samples training end! It took {:.4f} seconds".format(rst_end-rst_start))
 
   # # Control with more samples
   # reward_storage = []
