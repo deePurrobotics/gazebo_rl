@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
+import pickle
 import gym
 import rospy
 import random
@@ -104,35 +105,42 @@ def find_centered(memory):
   return index
 
 if __name__ == "__main__":
+  main_start = time.time()
   # init node
   rospy.init_node("crib_nav_mpc", anonymous=True, log_level=rospy.WARN)
   # create env
   env_name = "CribNav-v0"
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")
-  main_start = time.time()
   # set parameters
   num_actions = env.action_space.shape[0]
-  num_states = env.observation_space.shape[0] + 2 # add cos and sin of vector from bot to goal
+  num_states = env.observation_space.shape[0] + 4 # add cos and sin of vector from bot to goal
   num_episodes = 128
   num_steps = 256
-  num_sequences = 256
-  len_horizon = 1024 # number of time steps the controller considers
-  batch_size = 4096  
-  # setup model
+  # load model from save checkpoint
   model = tf.keras.Sequential([
     tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(num_states+num_actions,)),  # input shape required
     tf.keras.layers.Dense(32, activation=tf.nn.relu),
     tf.keras.layers.Dense(num_states)
   ])
-  stacs_memory = []
-  nextstates_memory = []
+  optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+  model_dir = "/home/linzhank/ros_ws/src/turtlebot_rl/scripts/turtlebot/crib_nav/checkpoint"
+  model_date = "20181025"
+  checkpoint_dir = os.path.join(model_dir, model_date)
+  root = tf.train.Checkpoint(optimizer=optimizer,
+                           model=model,
+                           optimizer_step=tf.train.get_or_create_global_step())
+  root.restore(tf.train.latest_checkpoint(checkpoint_dir))
+
+  # load memories
+  memory_dir = "/home/linzhank/ros_ws/src/turtlebot_rl/scripts/turtlebot/crib_nav/memories"
+  with open(os.path.join(memory_dir, "stacs_memory.txt"), "rb") as pkfile:
+    stacs_memory = pickle.load(pkfile)
+  with open(os.path.join(memory_dir, "nextstates_memory.txt"), "rb") as pkfile:
+    nextstates_memory = pickle.load(pkfile)
   memory_size = 2**16
 
-  # load model from save checkpoint
-
   # random shoot control with new samples
-  num_sequences = 128
   len_horizon = num_steps
   reward_storage = []
   for episode in range(num_episodes):
