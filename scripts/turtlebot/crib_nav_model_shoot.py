@@ -64,25 +64,49 @@ def obs_to_state(obs, info):
   state[-4:-2] = vec_r2g # dx, dy
   state[-2:] = [cos_alpha, sin_alpha]
   state = state.astype(np.float32)
-
+  
   return state
 
-def random_sample_actions(num_sequences, len_horizon, env):
+def random_action_samples(env, num_samples):
   """ 
-  Generate random action sequences with limited horizon
+  Generate an array of random action samples
   Args:
-    num_sequences
-    len_horizon: length of each sequence
     env: gym environment
+    num_action_samples: number of actions to be sampled randomly
   Returns:
-    action_sequences: in shape of (num_sequences, len_horizon)
+    action_samples: in shape of (num_action_samples, action_space_dim)
   """
-  action_sequences = np.zeros((num_sequences, len_horizon, env.action_space.shape[0]))
-  for s in range(num_sequences):
-    for h in range(len_horizon):
-      action_sequences[s,h] = env.action_space.sample() # random action
+  action_space_dim = env.action_space.shape[0]
+  action_samples = np.zeros([num_samples, action_space_dim])
+  for action in action_samples:
+    action = env.action_space.sample()
+  
+  return action_samples
 
-  return action_sequences
+def shoot_action(model, action_samples, state, goal):
+  """ 
+  Pick the action from the action_samples that most gap-closing
+  Args:
+    model: neural network dynamic model
+    action_samples: 
+    state: input to model
+    goal: goal position
+  Returns:
+    action: best action picked from action_samples
+  """
+  max_gap_close = 0
+  index = 0 # index of bext action
+  stacs = np.zeros((action_samples.shape[0], state.shape[0]+action_samples.shape[1]))
+  for i in range(stacs.shape[0]):
+    stacs[i] = np.concatenate((state, action_samples[i])).astype(np.float32) # state-action pair
+  pred_states = model(stacs) # predicted states of next time step
+  gap_change = np.linalg.norm(pred_states[:,7:9],axis=1) - np.linalg.norm(state[7:9])
+  mingap_id = np.argmin(gap_change) # find the index minimize the gap
+  if gap_change[mingap_id] > 0: # if none action closing the gap
+    print(bcolors.WARNING, "No action was found to close the gap", bcolors.ENDC)
+    return np.zeros(action_samples.shape[1]) # do not move
+  
+  return action_samples[mingap_id]
 
 def find_centered(memory):
   """
@@ -123,8 +147,9 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(32, activation=tf.nn.relu),
     tf.keras.layers.Dense(num_states)
   ])
+  global_step = tf.train.get_or_create_global_step()
   optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-  model_dir = "/home/linzhank/ros_ws/src/turtlebot_rl/scripts/turtlebot/crib_nav/checkpoint"
+  model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/checkpoint"
   model_date = "20181025"
   checkpoint_dir = os.path.join(model_dir, model_date)
   root = tf.train.Checkpoint(optimizer=optimizer,
@@ -133,7 +158,7 @@ if __name__ == "__main__":
   root.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
   # load memories
-  memory_dir = "/home/linzhank/ros_ws/src/turtlebot_rl/scripts/turtlebot/crib_nav/memories"
+  memory_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/memories"
   with open(os.path.join(memory_dir, "stacs_memory.txt"), "rb") as pkfile:
     stacs_memory = pickle.load(pkfile)
   with open(os.path.join(memory_dir, "nextstates_memory.txt"), "rb") as pkfile:
@@ -141,7 +166,7 @@ if __name__ == "__main__":
   memory_size = 2**16
 
   # random shoot control with new samples
-  len_horizon = num_steps
+  num_action_samples = 128
   reward_storage = []
   for episode in range(num_episodes):
     obs, info = env.reset()
@@ -151,14 +176,10 @@ if __name__ == "__main__":
     done = False
     # compute control policies as long as sampling more
     for step in range(num_steps):
-      action_sequences = generate_action_sequences(
-        num_sequences,
-        len_horizon,
-        env
-      )
+      action_samples = random_action_samples(env, num_samples=num_action_samples)
       action = shoot_action(
         model,
-        action_sequences,
+        action_samples,
         state,
         goal
       )
@@ -184,6 +205,7 @@ if __name__ == "__main__":
         bcolors.OKGREEN, "Episode: {}, Step: {}".format(episode, step), bcolors.ENDC,
         "\nCurrent position: {}".format(info["current_position"]),
         "\nGoal position: {}".format(info["goal_position"]),
+        "\nAction taken: {}".format(action),
         bcolors.BOLD, "\nReward: {:.4f}".format(reward), bcolors.ENDC
       )
       if done:
@@ -193,8 +215,8 @@ if __name__ == "__main__":
     dataset = utils.create_dataset(
       np.array(stacs_memory),
       np.array(nextstates_memory),
-      batch_size=batch_size,
-      num_epochs=4
+      batch_size=len(stacs_memory),
+      num_epochs=num_episodes
     )
     ep_start = time.time()
     for i, (x, y) in enumerate(dataset):
