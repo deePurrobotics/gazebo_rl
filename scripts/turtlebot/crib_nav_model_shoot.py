@@ -106,7 +106,7 @@ def shoot_action(model, action_samples, state, goal):
   i_mingap = np.argmin(gap_change) # find the index minimize the gap
   if gap_change[i_mingap] > 0: # if none action closing the gap
     print(bcolors.WARNING, "No action was found to close the gap", bcolors.ENDC)
-    return np.zeros(action_samples.shape[1]) # do not move
+    # return np.zeros(action_samples.shape[1]) # do not move
   
   return action_samples[i_mingap]
 
@@ -152,7 +152,7 @@ if __name__ == "__main__":
   global_step = tf.train.get_or_create_global_step()
   optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
   model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/checkpoint"
-  model_date = "20181025"
+  model_date = "20181026"
   checkpoint_dir = os.path.join(model_dir, model_date)
   root = tf.train.Checkpoint(optimizer=optimizer,
                            model=model,
@@ -227,7 +227,8 @@ if __name__ == "__main__":
         zip(grads, model.variables),
         global_step
       )
-      print("Training iter: {:d}, Loss: {:.4f}".format(i, loss_value))
+      if not i % 100:
+        print("Training iter: {:d}, Loss: {:.4f}".format(i, loss_value))
     ep_end=time.time()
     print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
 

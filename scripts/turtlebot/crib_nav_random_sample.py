@@ -91,7 +91,7 @@ if __name__ == "__main__":
   memory_size = 2**16
 
   # Random Sampling
-  sample_size = int(memory_size / 2)
+  sample_size = int(memory_size / 10)
   batch_size = sample_size
   rs_start = time.time()
   rospy.logdebug("Start random sampling...")
@@ -123,7 +123,7 @@ if __name__ == "__main__":
   print("Random sampling takes: {:.4f}".format(rs_end-rs_start))
 
   # Train random sampled dataset
-  num_epochs = 128
+  num_epochs = 1024
   dataset = utils.create_dataset(
     input_features=np.array(stacs_memory),
     output_labels=np.array(nextstates_memory),
