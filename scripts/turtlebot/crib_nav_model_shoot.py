@@ -27,6 +27,8 @@ import envs.crib_nav_task_env
 import utils
 from utils import bcolors
 
+import pdb
+
 tf.enable_eager_execution()
 
 
@@ -78,8 +80,8 @@ def random_action_samples(env, num_samples):
   """
   action_space_dim = env.action_space.shape[0]
   action_samples = np.zeros([num_samples, action_space_dim])
-  for action in action_samples:
-    action = env.action_space.sample()
+  for i in range(action_samples.shape[0]):
+    action_samples[i] = env.action_space.sample()
   
   return action_samples
 
@@ -101,12 +103,12 @@ def shoot_action(model, action_samples, state, goal):
     stacs[i] = np.concatenate((state, action_samples[i])).astype(np.float32) # state-action pair
   pred_states = model(stacs) # predicted states of next time step
   gap_change = np.linalg.norm(pred_states[:,7:9],axis=1) - np.linalg.norm(state[7:9])
-  mingap_id = np.argmin(gap_change) # find the index minimize the gap
-  if gap_change[mingap_id] > 0: # if none action closing the gap
+  i_mingap = np.argmin(gap_change) # find the index minimize the gap
+  if gap_change[i_mingap] > 0: # if none action closing the gap
     print(bcolors.WARNING, "No action was found to close the gap", bcolors.ENDC)
     return np.zeros(action_samples.shape[1]) # do not move
   
-  return action_samples[mingap_id]
+  return action_samples[i_mingap]
 
 def find_centered(memory):
   """
@@ -139,8 +141,8 @@ if __name__ == "__main__":
   # set parameters
   num_actions = env.action_space.shape[0]
   num_states = env.observation_space.shape[0] + 4 # add cos and sin of vector from bot to goal
-  num_episodes = 128
-  num_steps = 256
+  num_episodes = 256
+  num_steps = 128
   # load model from save checkpoint
   model = tf.keras.Sequential([
     tf.keras.layers.Dense(32, activation=tf.nn.relu, input_shape=(num_states+num_actions,)),  # input shape required
@@ -215,7 +217,7 @@ if __name__ == "__main__":
     dataset = utils.create_dataset(
       np.array(stacs_memory),
       np.array(nextstates_memory),
-      batch_size=len(stacs_memory),
+      batch_size=int(len(stacs_memory)/2),
       num_epochs=num_episodes
     )
     ep_start = time.time()
@@ -225,15 +227,15 @@ if __name__ == "__main__":
         zip(grads, model.variables),
         global_step
       )
-      print("Batch: {:04d}, Loss: {:.4f}".format(i, loss_value))
+      print("Training iter: {:d}, Loss: {:.4f}".format(i, loss_value))
     ep_end=time.time()
     print("Episode {:04d} training takes {:.4f}".format(episode, ep_end-ep_start))
 
     main_end = time.time()
     print(
       bcolors.HEADER,
-      "{:d} Random Samples was trained {:d} epochs".format(sample_size, num_epochs),
-      "\n{:d} new samples was collected and all samples were trained {:d} epochs".format(num_episodes*num_steps, num_episodes*4),
+      # "{:d} Random Samples was trained {:d} epochs".format(sample_size, num_epochs),
+      # "\n{:d} new samples was collected and all samples were trained {:d} epochs".format(num_episodes*num_steps, num_episodes*4),
       "\nTotal execution time: {:.4f}".format(main_end-main_start),
       bcolors.ENDC
     )
