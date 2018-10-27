@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
+import pickle
 import gym
 import rospy
 import random
@@ -87,11 +88,12 @@ if __name__ == "__main__":
     tf.keras.layers.Dense(num_states)
   ])
   stacs_memory = []
-  nextstates_memory = []
+  dstates_memory = []
+  # nextstates_memory = []
   memory_size = 2**16
 
   # Random Sampling
-  sample_size = int(memory_size / 10)
+  sample_size = int(memory_size / 20)
   batch_size = sample_size
   rs_start = time.time()
   rospy.logdebug("Start random sampling...")
@@ -103,15 +105,17 @@ if __name__ == "__main__":
     action = env.action_space.sample()
     obs, _, done, info = env.step(action)
     next_state = obs_to_state(obs, info) # to be worked out
+    delta_state = next_state - state
     # append action-state and next state in to the memories
     stac = np.concatenate((state, action)).astype(np.float32)
     stacs_memory.append(stac)
-    nextstates_memory.append(next_state.astype(np.float32))
-    print(
-      bcolors.OKBLUE, "Sample: {}".format(sample_index+1), bcolors.ENDC,
+    # nstates_memory.append(next_state) # uncomment this line if you want store next state
+    dstates_memory.append(delta_state)
+    prin(bcolors.OKBLUE, "Sample: {}".format(sample_index+1), bcolors.ENDC)
+    rospy.logdebug(
       "\ncurrent_state: {}".format(state),
-      "\naction: {}".format(action),
-      "\nnext_state: {}".format(next_state)
+      "\nnext_state: {}".format(next_state),
+      "\naction: {}".format(action)
     )
     sample_index += 1
     state = next_state
@@ -126,7 +130,7 @@ if __name__ == "__main__":
   num_epochs = 1024
   dataset = utils.create_dataset(
     input_features=np.array(stacs_memory),
-    output_labels=np.array(nextstates_memory),
+    output_labels=np.array(dstates_memory),
     batch_size=batch_size,
     num_epochs=num_epochs
   )
@@ -135,7 +139,7 @@ if __name__ == "__main__":
   loss_value, grads = grad(
     model,
     np.array(stacs_memory),
-    np.array(nextstates_memory)
+    np.array(dstates_memory)
   )
   # create check point
   model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/checkpoint"
@@ -170,3 +174,11 @@ if __name__ == "__main__":
       print("Iteration: {}, Loss: {:.3f}".format(i, metrics.result()))
   rst_end = time.time()
   print("Random samples training end! It took {:.4f} seconds".format(rst_end-rst_start))
+
+  # save memories
+  memory_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/memories"
+  with open(os.path.join(memory_dir, "stacs_memory.txt"), "wb") as pkfile:
+    pickle.dump(stacs_memory, pkfile)
+  with open(os.path.join(memory_dir, "dstates_memory.txt"), "wb") as pkfile:
+    pickle.dump(dstates_memory, pkfile)
+

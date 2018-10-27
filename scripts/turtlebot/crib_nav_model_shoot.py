@@ -101,8 +101,8 @@ def shoot_action(model, action_samples, state, goal):
   stacs = np.zeros((action_samples.shape[0], state.shape[0]+action_samples.shape[1]))
   for i in range(stacs.shape[0]):
     stacs[i] = np.concatenate((state, action_samples[i])).astype(np.float32) # state-action pair
-  pred_states = model(stacs) # predicted states of next time step
-  gap_change = np.linalg.norm(pred_states[:,7:9],axis=1) - np.linalg.norm(state[7:9])
+  pred_delta_states = model(stacs) # predicted states of next time step
+  gap_change = np.linalg.norm((pred_delta_states+state)[:,7:9],axis=1) - np.linalg.norm(state[7:9])
   i_mingap = np.argmin(gap_change) # find the index minimize the gap
   if gap_change[i_mingap] > 0: # if none action closing the gap
     print(bcolors.WARNING, "No action was found to close the gap", bcolors.ENDC)
@@ -152,7 +152,7 @@ if __name__ == "__main__":
   global_step = tf.train.get_or_create_global_step()
   optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
   model_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/checkpoint"
-  model_date = "20181026"
+  model_date = "20181027"
   checkpoint_dir = os.path.join(model_dir, model_date)
   root = tf.train.Checkpoint(optimizer=optimizer,
                            model=model,
@@ -163,12 +163,12 @@ if __name__ == "__main__":
   memory_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/memories"
   with open(os.path.join(memory_dir, "stacs_memory.txt"), "rb") as pkfile:
     stacs_memory = pickle.load(pkfile)
-  with open(os.path.join(memory_dir, "nextstates_memory.txt"), "rb") as pkfile:
-    nextstates_memory = pickle.load(pkfile)
+  with open(os.path.join(memory_dir, "dstates_memory.txt"), "rb") as pkfile:
+    dstates_memory = pickle.load(pkfile)
   memory_size = 2**16
 
   # random shoot control with new samples
-  num_action_samples = 128
+  num_action_samples = 1024
   reward_storage = []
   for episode in range(num_episodes):
     obs, info = env.reset()
@@ -187,6 +187,7 @@ if __name__ == "__main__":
       )
       obs, reward, done, info = env.step(action)
       next_state = obs_to_state(obs, info)
+      delta_state = next_state - state
       stac = np.concatenate((state, action)).astype(np.float32)
       # incrementally update memories
       if len(stacs_memory) < memory_size:
@@ -195,12 +196,18 @@ if __name__ == "__main__":
         id_pop = find_centered(stacs_memory)
         stacs_memory.pop(id_pop)
         stacs_memory.append(stac)
-      if len(nextstates_memory) < memory_size:
-        nextstates_memory.append(next_state)
+      if len(dstates_memory) < memory_size:
+        dstates_memory.append(delta_state)
       else:
-        id_pop = find_centered(nextstates_memory)
-        nextstates_memory.pop(id_pop)
-        nextstates_memory.append(next_state)
+        id_pop = find_centered(dstates_memory)
+        dstates_memory.pop(id_pop)
+        dstates_memory.append(delta_state)        
+      # if len(nextstates_memory) < memory_size:
+      #   nextstates_memory.append(next_state)
+      # else:
+      #   id_pop = find_centered(nextstates_memory)
+      #   nextstates_memory.pop(id_pop)
+      #   nextstates_memory.append(next_state)
       total_reward += reward
       state = next_state
       print(
@@ -211,12 +218,13 @@ if __name__ == "__main__":
         bcolors.BOLD, "\nReward: {:.4f}".format(reward), bcolors.ENDC
       )
       if done:
+        print(bcolors.WARNING, " ===\n Goal reached\n ===", bcolors.ENDC)
         break
     reward_storage.append(total_reward)
     # Train with samples at the end of every episode
     dataset = utils.create_dataset(
       np.array(stacs_memory),
-      np.array(nextstates_memory),
+      np.array(dstates_memory),
       batch_size=int(len(stacs_memory)/2),
       num_epochs=num_episodes
     )
