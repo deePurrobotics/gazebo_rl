@@ -26,8 +26,8 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     in world of walled crib. Action and state space will be both set to continuous. 
     """
     # action limits
-    self.max_linear_speed = 2.0
-    self.max_angular_speed = math.pi / 2
+    self.max_linear_speed = .8
+    self.max_angular_speed = math.pi / 4
     # observation limits
     self.max_x = 5
     self.max_y = 5

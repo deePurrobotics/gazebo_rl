@@ -44,11 +44,11 @@ def obs_to_state(obs, info):
   """
   This function converts observation into state
   Args: 
-    obs: [x, y, v_x, v_y, cos(theta), sin(theta), theta_dot]
+    obs: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot]
         theta= robot orientation, alpha= angle between r->g and x-axis
     info: {"goal_position", ...}
   Returns:
-    state: [x, y, v_x, v_y, cos(theta), sin(theta), theta_dot, dx, dy, cos(alpha), sin(alpha)]
+    state: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot, dx, dy, cos(alpha), sin(alpha)]
   """
   # create state based on obs
   state = np.zeros(obs.shape[0]+4)
