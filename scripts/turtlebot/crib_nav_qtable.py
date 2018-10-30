@@ -19,16 +19,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import utils
 
-import turtlebot_envs.crib_task_env
+import envs.crib_nav_task_env
 
 if __name__ == "__main__":
-  rospy.init_node("turtlebot2_crib_qlearn", anonymous=True, log_level=rospy.INFO)
-  env_name = 'TurtlebotCrib-v0'
+  rospy.init_node("crib_nav_qlearn", anonymous=True, log_level=rospy.WARN)
+  env_name = 'CribNav-v0'
   env = gym.make(env_name)
-  # env.seed(0)
   rospy.loginfo("Gazebo gym environment set")
-  # np.random.seed(0) 
-  rospy.loginfo("----- using Q Learning -----")
   # Load parameters
   num_states = 100
   num_actions = 4
