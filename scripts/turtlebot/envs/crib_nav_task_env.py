@@ -103,15 +103,19 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     self.previous_position = self.init_position
     rospy.logdebug("Robot was initiated as {}".format(model_state.pose))
 
-    # set goal point
-    goal_x = random.uniform(-self.max_x+.5, self.max_x-.5)
-    goal_y = random.uniform(-self.max_y+.5, self.max_y-.5)
+    # set goal point using pole coordinate
+    goal_r = random.uniform(0, 4.8) # goal vector magnitude
+    goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
+    goal_x = goal_r * math.cos(goal_theta)
+    goal_y = goal_r * math.sin(goal_theta)
     self.goal_position = np.array([goal_x, goal_y])
     # reset goal if it too close to bot's original position
     while np.linalg.norm(self.goal_position - self.init_position) <= 0.5:
       rospy.logerr("Goal was set too close to the robot, reset the goal...")
-      goal_x = random.uniform(-self.max_x+.5, self.max_x-.5)
-      goal_y = random.uniform(-self.max_y+.5, self.max_y-.5)
+      goal_r = random.uniform(0, 4.8) # goal vector magnitude
+      goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
+      goal_x = goal_r * math.cos(goal_theta)
+      goal_y = goal_r * math.sin(goal_theta)
       self.goal_position = np.array([goal_x, goal_y])
     rospy.logdebug("Goal point was set @ {}".format(self.goal_position))
     # Episode cannot done
