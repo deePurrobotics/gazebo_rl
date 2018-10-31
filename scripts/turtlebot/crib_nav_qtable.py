@@ -52,31 +52,64 @@ def obs_to_state(obs, info):
   phi = np.arctan2(sin_phi, cos_phi)
   # compute beta
   beta = phi - np.arctan2(obs[-2], obs[-3])
+  if beta > math.pi:
+    beta -= 2*math.pi
+  elif beta < -math.pi:
+    beta += 2*math.pi
   beta_dot = obs[-1]
   state = np.array([r_norm, p_norm, alpha, alpha_dot, beta, beta_dot]).astype(np.float32)
 
   return state
 
+def discretize_state(state):
+  """
+  Converts continuous state into discrete states
+  """
+  # define state boxes
+  box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, 4.8]])
+  box_2 = box_1
+  box_3 = np.array([[-math.pi, -math.pi/2], [-math.pi/2, 0], [0, math.pi/2], [math.pi/2, math.pi]])
+  box_4 = np.array([
+    [-math.pi, -math.pi/2],
+    [-math.pi/2, -math.pi/12],
+    [-math.pi/12, 0],
+    [0, math.pi/12],
+    [math.pi/12, math.pi/2],
+    [math.pi/2, math.pi]
+  ])
+  box_5 = box_4
+  box_6 = box_4
+  boxes = [box_1, box_2, box_3, box_4, box_5, box_6]
+  # match state into box
+  index = []
+  for i, s in enumerate(state):
+    for j, b in enumerate(boxes[i]):
+      if s >= b[0] and s <= b[1]:
+        index.append[j]
+
+  return index
+  
 if __name__ == "__main__":
   rospy.init_node("crib_nav_qlearn", anonymous=True, log_level=rospy.WARN)
   env_name = 'CribNav-v0'
   env = gym.make(env_name)
   rospy.loginfo("Gazebo gym environment set")
-  # Load parameters
-  num_states = 100
-  num_actions = 4
+  
+  state_dim = 6
+  boxes_per_dim = 4 # we assume every dimension of state has same number of boxes
+  num_actions = 2
   Alpha = 1. # learning rate
   Gamma = 0.95 # reward discount
-  num_episodes = 2000
-  num_steps = 500
-  low = env.observation_space.low
+  num_episodes = 5000
+  num_steps = 200
   # Initialize Q table
   Q = np.zeros([num_states, num_actions])
   reward_list = []
   for ep in range(num_episodes):
     # Reset env and get first observation
-    obs = env.reset()
-    state = utils.obs2state(obs, low)
+    obs, info = env.reset()
+    state = obs_to_state(obs, info)
+    
     total_reward = 0
     done = False
     for st in range(num_steps):
