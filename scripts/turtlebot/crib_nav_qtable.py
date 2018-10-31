@@ -18,7 +18,7 @@ import rospy
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import utils
+from utils import bcolors
 
 import envs.crib_nav_task_env
 
@@ -93,10 +93,10 @@ if __name__ == "__main__":
   num_actions = 2
   Alpha = 1. # learning rate
   Gamma = 0.95 # reward discount
-  num_episodes = 5
-  num_steps = 20
+  num_episodes = 5000
+  num_steps = 150
   # define state boxes
-  box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, 4.8]])
+  box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, 7]])
   box_2 = np.array([[0, 0.1], [0.1, 2], [2, 15]])
   box_3 = np.array([
     [-math.pi, -math.pi/2],
@@ -147,6 +147,7 @@ if __name__ == "__main__":
       state = next_state
       state_id = next_state_id
       print(
+        bcolors.OKGREEN, "\nEpisode: {}, Step: {}".format(episode, step), bcolors.ENDC,
         "\ncurrent_state: {}".format(state),
         "\nnext_state: {}".format(next_state),
         "\naction: {}".format(action),

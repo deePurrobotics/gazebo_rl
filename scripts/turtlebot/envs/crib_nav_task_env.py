@@ -65,6 +65,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     self.info = {}
     # Set model state
     self.set_robot_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
+    self.set_pin_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
     # self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
     # Here we will add any init functions prior to starting the MyRobotEnv
@@ -87,16 +88,16 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     x = mag * math.cos(ang)
     y = mag * math.sin(ang)
     w = random.uniform(-1.0, 1.0)    
-    model_state = ModelState()
-    model_state.model_name = "mobile_base"
-    model_state.pose.position.x = x
-    model_state.pose.position.y = y
-    model_state.pose.position.z = 0
-    model_state.pose.orientation.x = 0
-    model_state.pose.orientation.y = 0
-    model_state.pose.orientation.z = math.sqrt(1 - w**2)
-    model_state.pose.orientation.w = w
-    model_state.reference_frame = "world"
+    robot_state = ModelState()
+    robot_state.model_name = "mobile_base"
+    robot_state.pose.position.x = x
+    robot_state.pose.position.y = y
+    robot_state.pose.position.z = 0
+    robot_state.pose.orientation.x = 0
+    robot_state.pose.orientation.y = 0
+    robot_state.pose.orientation.z = math.sqrt(1 - w**2)
+    robot_state.pose.orientation.w = w
+    robot_state.reference_frame = "world"
     
     self.init_position = np.array([x, y])
     self.previous_position = self.init_position
@@ -115,13 +116,22 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
       goal_x = goal_r * math.cos(goal_theta)
       goal_y = goal_r * math.sin(goal_theta)
       self.goal_position = np.array([goal_x, goal_y])
+    # set pin's model state
+    pin_state = ModelState()
+    pin_state.model_name = "pin"
+    pin_state.pose.position.x = goal_x
+    pin_state.pose.position.y = goal_y
+    pin_state.pose.position.z = 0
+    pin_state.reference_frame = "world"
     # publish model_state to set bot
-    self.set_robot_state_publisher.publish(model_state)
-    self.set_goal
-    time.sleep(0.1)
+    rate = rospy.Rate(100)
+    for _ in range(10):
+      self.set_robot_state_publisher.publish(robot_state)
+      self.set_pin_state_publisher.publish(pin_state)
+      rate.sleep()
     
-    rospy.logdebug("Robot was initiated as {}".format(model_state.pose))
-    rospy.logdebug("Goal point was set @ {}".format(self.goal_position))
+    rospy.logwarn("Robot was initiated as {}".format(self.init_position))
+    rospy.logwarn("Goal point was set @ {}".format(self.goal_position))
     # Episode cannot done
     self._episode_done = False
     # Give the system a little time to finish initialization
