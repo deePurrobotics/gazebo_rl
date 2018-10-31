@@ -159,6 +159,5 @@ if __name__ == "__main__":
     reward_list.append(total_reward)
 
   print("Score over time: {}".format(sum(reward_list)/num_episodes))
-  print("Final Q-table: {}".format(Q))
 
   plt.plot(reward_list)
