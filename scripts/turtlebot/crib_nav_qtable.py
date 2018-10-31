@@ -94,7 +94,7 @@ if __name__ == "__main__":
   Alpha = 1. # learning rate
   Gamma = 0.95 # reward discount
   num_episodes = 5000
-  num_steps = 150
+  num_steps = 128
   # define state boxes
   box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, 7]])
   box_2 = np.array([[0, 0.1], [0.1, 2], [2, 15]])
