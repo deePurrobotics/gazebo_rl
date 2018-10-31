@@ -64,7 +64,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     self.goal_position = np.zeros(2)
     self.info = {}
     # Set model state
-    self.set_model_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
+    self.set_robot_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
     # self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
     self._episode_done = False
     # Here we will add any init functions prior to starting the MyRobotEnv
@@ -97,13 +97,9 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     model_state.pose.orientation.z = math.sqrt(1 - w**2)
     model_state.pose.orientation.w = w
     model_state.reference_frame = "world"
-    # publish model_state to set bot
-    self.set_model_state_publisher.publish(model_state)
-    time.sleep(0.1)
-
+    
     self.init_position = np.array([x, y])
     self.previous_position = self.init_position
-    rospy.logdebug("Robot was initiated as {}".format(model_state.pose))
 
     # set goal point using pole coordinate
     goal_r = random.uniform(0, 4.8) # goal vector magnitude
@@ -119,6 +115,12 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
       goal_x = goal_r * math.cos(goal_theta)
       goal_y = goal_r * math.sin(goal_theta)
       self.goal_position = np.array([goal_x, goal_y])
+    # publish model_state to set bot
+    self.set_robot_state_publisher.publish(model_state)
+    self.set_goal
+    time.sleep(0.1)
+    
+    rospy.logdebug("Robot was initiated as {}".format(model_state.pose))
     rospy.logdebug("Goal point was set @ {}".format(self.goal_position))
     # Episode cannot done
     self._episode_done = False
