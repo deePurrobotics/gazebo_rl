@@ -21,6 +21,42 @@ import utils
 
 import envs.crib_nav_task_env
 
+
+def obs_to_state(obs, info):
+  """
+  This function converts observation into state
+  Args: 
+    obs: [x, y, v_x, v_y, cos(theta), sin(theta), theta_dot]
+        theta= robot orientation, alpha= angle between r->g and x-axis
+    info: {"goal_position", ...}
+  Returns:
+    state: [r_norm, p_norm, alpha, alpha_dot, beta, beta_dot]
+      r_norm: distance from map origin to robot
+      p_norm: distance from robot to goal
+      alpha: angle from map's x to r
+      beta: angle from robot's x to p
+      *_dot: angular velocity
+  """
+  # compute states
+  r = obs[:2]
+  p = info["goal_position"] - obs[:2]
+  r_norm = np.linalg.norm(r) # sqrt(x^2+y^2)
+  p_norm = np.linalg.norm(p)
+  alpha = np.arctan2(obs[1], obs[0])
+  alpha_dot = np.arctan2(obs[3], obs[2])
+  # comput phi: angle from map's x_axis to p  
+  x_axis = np.array([1, 0])
+  y_axis = np.array([0, 1])
+  cos_phi = np.dot(p, x_axis) / (np.linalg.norm(p)*np.linalg.norm(x_axis))
+  sin_phi = np.dot(p, y_axis) / (np.linalg.norm(p)*np.linalg.norm(y_axis))
+  phi = np.arctan2(sin_phi, cos_phi)
+  # compute beta
+  beta = phi - np.arctan2(obs[-2], obs[-3])
+  beta_dot = obs[-1]
+  state = np.array([r_norm, p_norm, alpha, alpha_dot, beta, beta_dot]).astype(np.float32)
+
+  return state
+
 if __name__ == "__main__":
   rospy.init_node("crib_nav_qlearn", anonymous=True, log_level=rospy.WARN)
   env_name = 'CribNav-v0'
