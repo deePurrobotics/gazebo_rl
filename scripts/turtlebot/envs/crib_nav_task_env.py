@@ -27,7 +27,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     """
     # action limits
     self.max_linear_speed = .8
-    self.max_angular_speed = math.pi / 4
+    self.max_angular_speed = math.pi / 3
     # observation limits
     self.max_x = 5
     self.max_y = 5
