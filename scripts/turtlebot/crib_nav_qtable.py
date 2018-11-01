@@ -51,7 +51,7 @@ def obs_to_state(obs, info):
   cos_phi = np.dot(p, x_axis) / (np.linalg.norm(p)*np.linalg.norm(x_axis))
   sin_phi = np.dot(p, y_axis) / (np.linalg.norm(p)*np.linalg.norm(y_axis))
   phi = np.arctan2(sin_phi, cos_phi)
-  # compute beta
+  # compute beta in [-pi, pi]
   beta = phi - np.arctan2(obs[-2], obs[-3])
   if beta > math.pi:
     beta -= 2*math.pi
@@ -96,8 +96,8 @@ if __name__ == "__main__":
   num_episodes = 5000
   num_steps = 128
   # define state boxes
-  box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, 7]])
-  box_2 = np.array([[0, 0.1], [0.1, 2], [2, 15]])
+  box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, np.inf]])
+  box_2 = np.array([[0, 0.3], [0.3, 3], [3, np.inf]])
   box_3 = np.array([
     [-math.pi, -math.pi/2],
     [-math.pi/2, 0],
@@ -105,14 +105,14 @@ if __name__ == "__main__":
     [math.pi/2, math.pi]
   ])
   box_4 = np.array([
-    [-math.pi, -math.pi/2],
-    [-math.pi/2, -math.pi/12],
+    [-np.inf, -math.pi],
+    [-math.pi, -math.pi/12],
     [-math.pi/12, 0],
     [0, math.pi/12],
-    [math.pi/12, math.pi/2],
-    [math.pi/2, math.pi]
+    [math.pi/12, math.pi],
+    [math.pi, np.inf]
   ])
-  box_5 = box_4
+  box_5 = box_3
   box_6 = box_4
   boxes = [box_1, box_2, box_3, box_4, box_5, box_6]
   # initiate Q-table
@@ -125,6 +125,12 @@ if __name__ == "__main__":
   for episode in range(num_episodes):
     # Reset env and get first observation
     obs, info = env.reset()
+    print(
+      bcolors.WARNING, "Episode: {}".format(episode),
+      "\nRobot init position: {}".format(obs[:2]),
+      "\nGoal position: {}".format(info["goal_position"]),
+      bcolors.ENDC
+    )
     state = obs_to_state(obs, info)
     state_id = discretize_state(state, boxes)
     total_reward = 0
@@ -148,13 +154,14 @@ if __name__ == "__main__":
       state_id = next_state_id
       print(
         bcolors.OKGREEN, "\nEpisode: {}, Step: {}".format(episode, step), bcolors.ENDC,
-        "\ncurrent_state: {}".format(state),
-        "\nnext_state: {}".format(next_state),
-        "\naction: {}".format(action),
-        "\ngoal: {}".format(info["goal_position"])
+        "\nRobot current position: {}".format(obs[:2]),
+        "\nGoal: {}".format(info["goal_position"]),
+        "\nAction: {}".format(action),
+        "\nreward: {}".format(reward)
       )
       rospy.loginfo("Total reward = {}".format(total_reward))
       if done:
+        print(bcolors.WARNING, "\nGOAL!!!\n")
         break
 
     reward_list.append(total_reward)
