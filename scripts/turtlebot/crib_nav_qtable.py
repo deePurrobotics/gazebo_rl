@@ -161,7 +161,7 @@ if __name__ == "__main__":
       )
       rospy.loginfo("Total reward = {}".format(total_reward))
       if done:
-        print(bcolors.WARNING, "\nGOAL!!!\n")
+        print(bcolors.WARNING, "\nGOAL!!!\n", bcolors.ENDC)
         break
 
     reward_list.append(total_reward)
