@@ -147,7 +147,7 @@ if __name__ == "__main__":
       obs, reward, done, info = env.step(action)
       next_state = obs_to_state(obs, info)
       next_state_id = discretize_state(state, boxes)
-      reward = reward + (next_state[1]-state[1])/p_0
+      reward = reward + (state[1]-next_state[1])/p_0
       # Update Q table
       Q[state_id][action_id] = Q[state_id][action_id] + Alpha*(reward + Gamma*np.max(Q[next_state_id]) - Q[state_id][action_id])
       episode_reward += reward
