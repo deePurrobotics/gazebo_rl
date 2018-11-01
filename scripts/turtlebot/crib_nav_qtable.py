@@ -133,7 +133,8 @@ if __name__ == "__main__":
     )
     state = obs_to_state(obs, info)
     state_id = discretize_state(state, boxes)
-    total_reward = 0
+    p_0 = state[1] # initial distance to goal
+    episode_reward = 0
     done = False
     for step in range(num_steps):
       # Choose action with epsilon-greedy
@@ -146,9 +147,10 @@ if __name__ == "__main__":
       obs, reward, done, info = env.step(action)
       next_state = obs_to_state(obs, info)
       next_state_id = discretize_state(state, boxes)
+      reward = reward + (next_state[1]-state[1])/p_0
       # Update Q table
       Q[state_id][action_id] = Q[state_id][action_id] + Alpha*(reward + Gamma*np.max(Q[next_state_id]) - Q[state_id][action_id])
-      total_reward += reward
+      episode_reward += reward
       # update state
       state = next_state
       state_id = next_state_id
@@ -159,12 +161,12 @@ if __name__ == "__main__":
         "\nAction: {}".format(action),
         "\nreward: {}".format(reward)
       )
-      rospy.loginfo("Total reward = {}".format(total_reward))
+      rospy.loginfo("Total reward = {}".format(episode_reward))
       if done:
         print(bcolors.WARNING, "\nGOAL!!!\n", bcolors.ENDC)
         break
 
-    reward_list.append(total_reward)
+    reward_list.append(episode_reward)
 
   print("Score over time: {}".format(sum(reward_list)/num_episodes))
 
