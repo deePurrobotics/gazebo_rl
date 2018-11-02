@@ -17,6 +17,8 @@ from gym import wrappers
 import rospy
 import math
 import numpy as np
+import os
+import datetime
 import matplotlib.pyplot as plt
 from utils import bcolors
 
@@ -88,12 +90,12 @@ if __name__ == "__main__":
   rospy.init_node("crib_nav_qlearn", anonymous=True, log_level=rospy.WARN)
   env_name = 'CribNav-v0'
   env = gym.make(env_name)
-  rospy.loginfo("Gazebo gym environment set")
+  rospy.loginfo("CribNav environment set")
   # parameters
   num_actions = 2
   Alpha = 1. # learning rate
-  Gamma = 0.95 # reward discount
-  num_episodes = 5000
+  Gamma = 0.8 # reward discount
+  num_episodes = 500
   num_steps = 128
   # define state boxes
   box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, np.inf]])
@@ -134,11 +136,15 @@ if __name__ == "__main__":
     state = obs_to_state(obs, info)
     state_id = discretize_state(state, boxes)
     p_0 = state[1] # initial distance to goal
+    epsilon = max(0.01, min(1, 1-math.log10(episode/25.))) # explore rate
     episode_reward = 0
     done = False
     for step in range(num_steps):
       # Choose action with epsilon-greedy
-      action_id = np.argmax(Q[state_id] + np.random.randn(num_actions)*(1./(episode+1)))
+      if random.random() < epsilon:
+        action_id = np.random.randrange(num_actions) # explore
+      else:
+        action_id = np.argmax(Q[state_id]) # exploit
       if not action_id:
         action = np.array([env.action_space.high[0], env.action_space.low[1]]) # id=0 => [high_lin, low_ang]
       else:
