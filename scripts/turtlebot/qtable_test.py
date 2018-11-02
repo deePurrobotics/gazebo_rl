@@ -154,4 +154,6 @@ if __name__ == "__main__":
       "\nreward: {}".format(reward)
     )
 
-    
+    if done:
+      print(bcolors.WARNING, "\n!!!\nGOAL\n!!!\n", bcolors.ENDC)
+      break
