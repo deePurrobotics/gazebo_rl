@@ -17,9 +17,12 @@ from gym import wrappers
 import rospy
 import math
 import numpy as np
+import random
 import os
 import datetime
 import matplotlib.pyplot as plt
+import pickle
+
 from utils import bcolors
 
 import envs.crib_nav_task_env
@@ -124,6 +127,16 @@ if __name__ == "__main__":
   q_axes.append(num_actions) # dont forget num_actions
   Q = np.zeros(q_axes)
   reward_list = []
+  # make storage for q tables
+  qtable_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/qtables"
+  today = today = datetime.datetime.today().strftime("%Y%m%d")
+  qtable_dir = os.path.join(qtable_dir, today, "_dense_reward")
+  if not os.path.exists(os.path.dirname(qtable_dir)):
+    try:
+      os.makedirs(qtable_dir)
+    except OSError as exc: # Guard against race condition
+      if exc.errno != errno.EEXIST:
+        raise
   for episode in range(num_episodes):
     # Reset env and get first observation
     obs, info = env.reset()
@@ -136,13 +149,14 @@ if __name__ == "__main__":
     state = obs_to_state(obs, info)
     state_id = discretize_state(state, boxes)
     p_0 = state[1] # initial distance to goal
-    epsilon = max(0.01, min(1, 1-math.log10(episode/25.))) # explore rate
+    epsilon = max(0.01, min(1, 1-math.log10((1+episode)/25.))) # explore rate
     episode_reward = 0
     done = False
     for step in range(num_steps):
       # Choose action with epsilon-greedy
       if random.random() < epsilon:
-        action_id = np.random.randrange(num_actions) # explore
+        action_id = random.randrange(num_actions) # explore
+        print(bcolors.FAIL, "Explore")
       else:
         action_id = np.argmax(Q[state_id]) # exploit
       if not action_id:
@@ -169,10 +183,14 @@ if __name__ == "__main__":
       )
       rospy.loginfo("Total reward = {}".format(episode_reward))
       if done:
-        print(bcolors.WARNING, "\nGOAL!!!\n", bcolors.ENDC)
+        print(bcolors.WARNING, "\n!!!\nGOAL\n!!!\n", bcolors.ENDC)
         break
-
+    print(bcolors.BOLD, "Episodic reward: {}".format(episode_reward), bcolors.ENDC)
     reward_list.append(episode_reward)
+    # save qtable every 100 episode
+    if not (episode+1) % 100:
+      with open(os.path.join(qtable_dir, "qtable_{}-{}.txt".format(episode+1, num_episodes)), "wb") as pk:
+        pickle.dump(Q,pk)
 
   print("Score over time: {}".format(sum(reward_list)/num_episodes))
 
