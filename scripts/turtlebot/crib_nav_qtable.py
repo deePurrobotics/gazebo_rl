@@ -149,7 +149,7 @@ if __name__ == "__main__":
     state = obs_to_state(obs, info)
     state_id = discretize_state(state, boxes)
     p_0 = state[1] # initial distance to goal
-    epsilon = max(0.01, min(1, 1-math.log10((1+episode)/25.))) # explore rate
+    epsilon = max(0.01, min(1, 1-math.log10((1+episode)/100.))) # explore rate
     episode_reward = 0
     done = False
     for step in range(num_steps):
