@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import rospy
 import numpy as np
@@ -188,7 +188,7 @@ class CablePointTaskEnv(CableJointRobotEnv):
     else:
       # if bot reached goal, the init distance will be the reward
       # reward = np.linalg.norm(self.goal_position-self.init_position)
-      reward = 100
+      reward = 0
     rospy.logdebug("Compute reward done. \nreward = {}".format(reward))
     
     return reward
