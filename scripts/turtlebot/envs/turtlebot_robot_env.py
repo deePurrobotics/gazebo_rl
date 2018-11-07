@@ -44,7 +44,7 @@ class TurtlebotRobotEnv(GymGazeboEnv):
     # We launch the init function of the Parent Class gym_gazebo_env.GymGazeboEnv
     super(TurtlebotRobotEnv, self).__init__(
       start_init_physics_parameters=False,
-      reset_world_or_sim="WORLD"
+      reset_world_or_sim="SIMULATION"
     )
 
     self.gazebo.unpauseSim()
