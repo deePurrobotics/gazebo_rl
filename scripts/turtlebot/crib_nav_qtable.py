@@ -98,7 +98,7 @@ if __name__ == "__main__":
   num_actions = 2
   Alpha = 1. # learning rate
   Gamma = 0.8 # reward discount
-  num_episodes = 500
+  num_episodes = 1000
   num_steps = 128
   # define state boxes
   box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, np.inf]])
