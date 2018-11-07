@@ -26,7 +26,7 @@ for episode in range(10):
   for step in range(128):
     action = env.action_space.sample()
     next_state, reward, done, info = env.step(action)
-    print("Episode : {}, Step: {}, \nCurrent position: {}, Goal position: {}, Reward: {:.4f}".format(
+    print("Episode : {}, Step: {}, \nCurrent orientation: {}, Goal orientation: {}, Reward: {:.4f}".format(
       episode,
       step,
       info["current_orientation"],
