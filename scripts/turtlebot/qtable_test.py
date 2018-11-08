@@ -114,8 +114,8 @@ if __name__ == "__main__":
     q_axes.append(b.shape[0])
   q_axes.append(num_actions) # dont forget num_actions
   # load q tables
-  qtable_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/qtables/20181102/_dense_reward"
-  with open(os.path.join(qtable_dir, "qtable_500-500.txt"), "rb") as pkl:
+  qtable_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/qtables/20181107/_dense_reward"
+  with open(os.path.join(qtable_dir, "qtable_700-1000.txt"), "rb") as pkl:
     Q = pickle.load(pkl)
   # Reset env and get first observation
   obs, info = env.reset()

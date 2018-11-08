@@ -25,36 +25,65 @@ import pickle
 
 from utils import bcolors
 
-import envs.crib_nav_task_env
+import envs.cable_point_task_env
 
-class Boxes:
-  """
-  Define discrete boxes to segment the state space
-  """
-  def __init__(self):
-    self.boxes = []
-  def generate_boxes(self):
-    # define state boxes
-    box_1 = np.array([
-      [-math.pi, -math.pi/15],
-      [-math.pi/15, 0],
-      [0, math.pi/15],
-      [math.pi/15, math.pi],
-    ])
-    box_2 = box_1
-    box_3 = box_1
-    box_4 = np.array([
-      [-np.inf, -math.pi],
-      [-math.pi, 0],
-      [0, math.pi],
-      [math.pi, np.inf]
-    ])
-    box_5 = box_4
-    box_6 = box_4
-    self.boxes = [box_1, box_2, box_3, box_4, box_5, box_6]
 
-    return self.boxes
+def generate_boxes():
+  # define state boxes
+  box_1 = np.array([
+    [-math.pi, -math.pi/15],
+    [-math.pi/15, 0],
+    [0, math.pi/15],
+    [math.pi/15, math.pi],
+  ])
+  box_2 = box_1
+  box_3 = box_1
+  box_4 = np.array([
+    [-np.inf, -math.pi],
+    [-math.pi, 0],
+    [0, math.pi],
+    [math.pi, np.inf]
+  ])
+  box_5 = box_4
+  box_6 = box_4
+  boxes = [box_1, box_2, box_3, box_4, box_5, box_6]
   
+  return boxes
+  
+def between_pis(angle_array):
+  """
+  Convert an angle in rad into a value in range: (-pi,pi)
+  """
+  for angle in angle_array:
+    # make angle in range: (-2pi, 2pi)
+    if angle > np.pi*2:
+      angle %= np.pi*2
+    elif angle < -np.pi*2:
+      angle %= -np.pi*2
+      # make anle in range: (-pi, pi)
+    if angle>np.pi:
+      angle = angle%(2*np.pi)-2*np.pi
+    elif angle<-np.pi:
+      angle = angle % (-2*np.pi) + 2*np.pi
+
+  return angle
+    
+def obs_to_state(obs, info):
+  """
+  This function converts observation into state
+  Args: 
+    obs: [roll, pitch, yaw, roll_dot, pitch_dot, yaw_dot]
+    info: {"goal_orientation", ...}
+  Returns:
+    state: [d_roll, d_pitch, d_yaw, roll_dot, pitch_dot, yaw_dot]
+  """
+  # compute states
+  state = obs
+  delta_orientation = between_pis(info["goal_orientation"] - obs[:3])
+  state[:3] = delta_orientation
+
+  return state
+
 def discretize_state(state, boxes):
   """
   Converts continuous state into discrete states
@@ -78,36 +107,18 @@ def discretize_state(state, boxes):
 
 if __name__ == "__main__":
   # init node
-  rospy.init_node("crib_nav_qlearn", anonymous=True, log_level=rospy.WARN)
-  env_name = 'CribNav-v0'
+  rospy.init_node("cable_point_qlearn", anonymous=True, log_level=rospy.WARN)
+  env_name = 'CablePoint-v0'
   env = gym.make(env_name)
-  rospy.loginfo("CribNav environment set")
+  rospy.loginfo("CablePoint environment set")
   # parameters
-  num_actions = 2
+  num_actions = 4
   Alpha = 1. # learning rate
-  Gamma = 0.8 # reward discount
-  num_episodes = 1000
+  Gamma = 0.9 # reward discount
+  num_episodes = 10
   num_steps = 128
   # define state boxes
-  box_1 = np.array([[0, 1.6], [1.6, 3.2], [3.2, np.inf]])
-  box_2 = np.array([[0, 0.3], [0.3, 3], [3, np.inf]])
-  box_3 = np.array([
-    [-math.pi, -math.pi/2],
-    [-math.pi/2, 0],
-    [0, math.pi/2],
-    [math.pi/2, math.pi]
-  ])
-  box_4 = np.array([
-    [-np.inf, -math.pi],
-    [-math.pi, -math.pi/12],
-    [-math.pi/12, 0],
-    [0, math.pi/12],
-    [math.pi/12, math.pi],
-    [math.pi, np.inf]
-  ])
-  box_5 = box_3
-  box_6 = box_4
-  boxes = [box_1, box_2, box_3, box_4, box_5, box_6]
+  boxes = generate_boxes()
   # initiate Q-table
   q_axes = []
   for b in boxes:
@@ -116,9 +127,9 @@ if __name__ == "__main__":
   Q = np.zeros(q_axes)
   reward_list = []
   # make storage for q tables
-  qtable_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/qtables"
+  qtable_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/cable_joint/cable_point/qtables"
   today = today = datetime.datetime.today().strftime("%Y%m%d")
-  qtable_dir = os.path.join(qtable_dir, today, "_dense_reward")
+  qtable_dir = os.path.join(qtable_dir, today)
   if not os.path.exists(os.path.dirname(qtable_dir)):
     try:
       os.makedirs(qtable_dir)
@@ -130,14 +141,14 @@ if __name__ == "__main__":
     obs, info = env.reset()
     print(
       bcolors.WARNING, "Episode: {}".format(episode),
-      "\nRobot init position: {}".format(obs[:2]),
-      "\nGoal position: {}".format(info["goal_position"]),
+      "\nRobot init orientation: {}".format(obs[:3]),
+      "\nGoal orientation: {}".format(info["goal_orientation"]),
       bcolors.ENDC
     )
     state = obs_to_state(obs, info)
     state_id = discretize_state(state, boxes)
     p_0 = state[1] # initial distance to goal
-    epsilon = max(0.01, min(1, 1-math.log10((1+episode)/100.))) # explore rate
+    epsilon = max(0.01, min(1, 1-math.log10((1+episode)/95.))) # explore rate
     episode_reward = 0
     done = False
     for step in range(num_steps):
@@ -147,10 +158,8 @@ if __name__ == "__main__":
         print(bcolors.FAIL, "Explore")
       else:
         action_id = np.argmax(Q[state_id]) # exploit
-      if not action_id:
-        action = np.array([env.action_space.high[0], env.action_space.low[1]]) # id=0 => [high_lin, low_ang]
-      else:
-        action = env.action_space.high # id=1 => [high_lin, high_ang]
+      action = np.zeros(num_actions)
+      action[action_id] = 1
       # Get new state and reward
       obs, reward, done, info = env.step(action)
       next_state = obs_to_state(obs, info)
@@ -164,8 +173,8 @@ if __name__ == "__main__":
       state_id = next_state_id
       print(
         bcolors.OKGREEN, "\nEpisode: {}, Step: {}".format(episode, step), bcolors.ENDC,
-        "\nRobot current position: {}".format(obs[:2]),
-        "\nGoal: {}".format(info["goal_position"]),
+        "\nRobot current orientation: {}".format(obs[:3]),
+        "\nGoal: {}".format(info["goal_orientation"]),
         "\nAction: {}".format(action),
         "\nreward: {}".format(reward)
       )
