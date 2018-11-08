@@ -97,7 +97,7 @@ if __name__ == "__main__":
   # parameters
   num_actions = 2
   Alpha = 1. # learning rate
-  Gamma = 0.8 # reward discount
+  Gamma = 0.9 # reward discount
   num_episodes = 1000
   num_steps = 128
   # define state boxes
@@ -126,6 +126,7 @@ if __name__ == "__main__":
     q_axes.append(b.shape[0])
   q_axes.append(num_actions) # dont forget num_actions
   Q = np.zeros(q_axes)
+  reward_over_time_list = []
   reward_list = []
   # make storage for q tables
   qtable_dir = "/home/linzhank/ros_ws/src/gazebo_rl/scripts/turtlebot/crib_nav/qtables"
@@ -149,7 +150,7 @@ if __name__ == "__main__":
     state = obs_to_state(obs, info)
     state_id = discretize_state(state, boxes)
     p_0 = state[1] # initial distance to goal
-    epsilon = max(0.01, min(1, 1-math.log10((1+episode)/100.))) # explore rate
+    epsilon = max(0.01, min(1, 1-math.log10((1+episode)/95.))) # explore rate
     episode_reward = 0
     done = False
     for step in range(num_steps):
@@ -185,6 +186,10 @@ if __name__ == "__main__":
       if done:
         print(bcolors.WARNING, "\n!!!\nGOAL\n!!!\n", bcolors.ENDC)
         break
+    reward_over_time = sum(reward_list)/num_episodes
+    reward_over_time_list.append(reward_over_time)
+    
+    print("Score over time: {}".format(reward_over_time))
     print(bcolors.BOLD, "Episodic reward: {}".format(episode_reward), bcolors.ENDC)
     reward_list.append(episode_reward)
     # save qtable every 100 episode
@@ -192,6 +197,5 @@ if __name__ == "__main__":
       with open(os.path.join(qtable_dir, "qtable_{}-{}.txt".format(episode+1, num_episodes)), "wb") as pk:
         pickle.dump(Q,pk)
 
-  print("Score over time: {}".format(sum(reward_list)/num_episodes))
 
   plt.plot(reward_list)
