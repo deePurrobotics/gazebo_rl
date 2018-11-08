@@ -198,4 +198,4 @@ if __name__ == "__main__":
         pickle.dump(Q,pk)
 
 
-  plt.plot(reward_list)
+  plt.plot(reward_over_time_list)
