@@ -1,0 +1,28 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <world name="default">
+    <!-- A global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <!-- A ground plane -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- A testing model that includes the Velodyne sensor model -->
+      <include>
+        <uri>model://cable_joint_and_target</uri>
+      </include>
+      <plugin name="cable_force" filename="libcableforce_plugin.so"/>
+    <physics type='ode'>
+ 	 <max_step_size>0.01</max_step_size>
+ 	 <real_time_factor>1</real_time_factor>
+  	<real_time_update_rate>100</real_time_update_rate>
+ 	 <gravity>0 0 0</gravity>
+    </physics>
+      <!-- Attach the plugin to this model -->
+
+
+  </world>
+</sdf>
