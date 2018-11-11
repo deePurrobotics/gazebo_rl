@@ -35,7 +35,7 @@ The environments are build with [Gazebo-7.0](http://gazebosim.org/tutorials?tut=
    $ cmake ..
    $ make
    ```
-3. **Add `export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:**this_repo**/worlds/cable_world/build` to `~/.bashrc`**
+3. **Add `export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:*this_repo*/worlds/cable_world/build` to `~/.bashrc`**
 4. Launch cable joint simulation, `$ roslaunch gazebo_rl cable_joint.launch`
 5. Open a new terminal to test this env, `$ rosrun gazebo_rl cable_env_test`
    > make sure to `$ chmod +x *this_repo*/scripts/cable_joint/cable_env_test.py`
