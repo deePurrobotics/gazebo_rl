@@ -15,6 +15,7 @@
         <uri>model://cable_joint_and_target</uri>
       </include>
       <plugin name="cable_force" filename="libcableforce_plugin.so"/>
+
     <physics type='ode'>
  	 <max_step_size>0.01</max_step_size>
  	 <real_time_factor>1</real_time_factor>
