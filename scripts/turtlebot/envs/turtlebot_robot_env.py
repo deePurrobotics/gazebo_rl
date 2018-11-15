@@ -4,7 +4,7 @@ import numpy as np
 import rospy
 from .gym_gazebo_env import GymGazeboEnv
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Image, LaserScan, PointCloud2
+from sensor_msgs.msg import Image, LaserScan, PointCloud2, Imu
 from gazebo_msgs.msg import ModelStates
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
@@ -25,6 +25,9 @@ class TurtlebotRobotEnv(GymGazeboEnv):
     * /camera/depth/points: Pointcloud sensor readings
     * /camera/rgb/image_raw: RGB camera
     * /kobuki/laser/scan: Laser Readings
+    * /mobile_base/sensors/imu_data: IMU Readings
+    
+    Simulation Topic:
     * /gazebo/model_states: Gazebo simulated model states
 
     Actuators Topic List: 
@@ -57,7 +60,9 @@ class TurtlebotRobotEnv(GymGazeboEnv):
     rospy.Subscriber("/camera/depth/points", PointCloud2, self._camera_depth_points_callback)
     rospy.Subscriber("/camera/rgb/image_raw", Image, self._camera_rgb_image_raw_callback)
     rospy.Subscriber("/kobuki/laser/scan", LaserScan, self._laser_scan_callback)
+    rospy.Subscriber("/mobile_base/sensors/imu_data", Imu, self._imu_data_callback)
     rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_callback)
+    
 
     self._cmd_vel_pub = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=1)
     self._check_publishers_connection()
@@ -85,10 +90,11 @@ class TurtlebotRobotEnv(GymGazeboEnv):
     rospy.logdebug("START ALL SENSORS READY")
     self._check_odom_ready()
     # We dont need to check for the moment, takes too long
-    #self._check_camera_depth_image_raw_ready()
-    #self._check_camera_depth_points_ready()
-    #self._check_camera_rgb_image_raw_ready()
-    #self._check_laser_scan_ready()
+    self._check_camera_depth_image_raw_ready()
+    self._check_camera_depth_points_ready()
+    self._check_camera_rgb_image_raw_ready()
+    self._check_laser_scan_ready()
+    self._check_imu_data_ready()
     self._check_model_states_ready()
     rospy.logdebug("ALL SENSORS READY")
 
@@ -153,6 +159,18 @@ class TurtlebotRobotEnv(GymGazeboEnv):
         
     return self.laser_scan    
 
+  def _check_imu_data_ready(self):
+    self.imu_data = None
+    rospy.logdebug("Waiting for /mobile_base/sensors/imu_data to be READY...")
+    while self.imu_data is None and not rospy.is_shutdown():
+      try:
+        self.imu_data = rospy.wait_for_message("/mobile_base/sensors/imu_data", Imu, timeout=5.0)
+        rospy.logdebug("Current /mobile_base/sensors/imu_data READY=>")
+      except:
+        rospy.logerr("Current /mobile_base/sensors/imu_data not ready yet, retrying for getting imu_data")
+        
+    return self.imu_data
+
   def _check_model_states_ready(self):
     self.model_states = None
     rospy.logdebug("Waiting for /gazebo/model_states to be READY...")
@@ -181,6 +199,9 @@ class TurtlebotRobotEnv(GymGazeboEnv):
         
   def _laser_scan_callback(self, data):
     self.laser_scan = data
+
+  def _imu_data_callback(self, data):
+    self.imu_data = data
 
   def _model_states_callback(self, data):
     self.model_states = data

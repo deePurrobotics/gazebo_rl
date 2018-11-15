@@ -484,18 +484,18 @@
       <pose frame=''>0.497681 0 0 0 -0 0</pose>
     </model>
     <state world_name='default'>
-      <sim_time>1160 340000000</sim_time>
-      <real_time>26 20404859</real_time>
-      <wall_time>1542217260 450291046</wall_time>
-      <iterations>2599</iterations>
+      <sim_time>1250 990000000</sim_time>
+      <real_time>33 211466614</real_time>
+      <wall_time>1542315902 978781618</wall_time>
+      <iterations>3319</iterations>
       <model name='Dumpster'>
-        <pose frame=''>3.61271 -7.29523 0.000784 3e-06 -0.000204 0.002145</pose>
+        <pose frame=''>3.61271 -7.29523 0.000784 3e-06 0.000204 0.002145</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>3.61271 -7.29523 0.000784 3e-06 -0.000204 0.002145</pose>
+          <pose frame=''>3.61271 -7.29523 0.000784 3e-06 0.000204 0.002145</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>-0.006895 -1.5e-05 0 0.014007 -0.246907 -5.8e-05</acceleration>
-          <wrench>-0.006895 -1.5e-05 0 0 -0 0</wrench>
+          <acceleration>0.006895 1.5e-05 0 -0.014007 0.246907 5.8e-05</acceleration>
+          <wrench>0.006895 1.5e-05 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='bookshelf'>
@@ -519,10 +519,10 @@
         </link>
       </model>
       <model name='cardboard_box'>
-        <pose frame=''>5.4687 5.95468 0.447998 -3e-06 1e-06 3e-06</pose>
+        <pose frame=''>5.4687 5.95468 0.447998 -3e-06 1e-06 5e-06</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>5.4687 5.95468 0.447998 -3e-06 1e-06 3e-06</pose>
+          <pose frame=''>5.4687 5.95468 0.447998 -3e-06 1e-06 5e-06</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -599,13 +599,13 @@
         </link>
       </model>
       <model name='cube_20k'>
-        <pose frame=''>-5.20096 5.07492 0.499961 -3.9e-05 -7.9e-05 1.5916</pose>
+        <pose frame=''>-5.20094 5.0749 0.499961 -3.9e-05 -7.9e-05 1.59161</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>-5.20098 5.07488 0.999961 -3.9e-05 -7.9e-05 1.5916</pose>
+          <pose frame=''>-5.20096 5.07486 0.999961 -3.9e-05 -7.9e-05 1.59161</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>-0.090712 -2.59198 -0.08691 2.59186 -0.090724 0.000182</acceleration>
-          <wrench>-0.090712 -2.59198 -0.08691 0 -0 0</wrench>
+          <acceleration>-0.090699 -2.59198 -0.08691 2.59186 -0.090711 0.000182</acceleration>
+          <wrench>-0.090699 -2.59198 -0.08691 0 -0 0</wrench>
         </link>
       </model>
       <model name='grey_wall_20'>
@@ -708,24 +708,24 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
-      <model name='red_ball_0'>
-        <pose frame=''>3.00236 -2.04612 0 0 -0 0</pose>
+      <model name='red_ball_1'>
+        <pose frame=''>5.48532 -5.58906 0.055959 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>3.00236 -2.04612 0.08 0 -0 0</pose>
+          <pose frame=''>5.48532 -5.58906 0.135959 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='table'>
-        <pose frame=''>5.55166 5.94263 -0.000134 0 0.000205 0</pose>
+        <pose frame=''>5.55166 5.94263 -0.000135 0 -0.000206 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>5.55166 5.94263 -0.000134 0 0.000205 0</pose>
+          <pose frame=''>5.55166 5.94263 -0.000135 0 -0.000206 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0.000911 -1.6e-05 0.002179 -0.027411 0.291662 1.4e-05</acceleration>
-          <wrench>0.000911 -1.6e-05 0.002179 0 -0 0</wrench>
+          <acceleration>-0.000911 1.6e-05 -0.002179 0.027411 -0.291662 -1.4e-05</acceleration>
+          <wrench>-0.000911 1.6e-05 -0.002179 0 -0 0</wrench>
         </link>
       </model>
       <model name='unit_cylinder_1'>
@@ -744,7 +744,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>1.0165 -8.68319 5.40337 -0 0.7538 1.36816</pose>
+        <pose frame=''>5.34935 -12.6993 10.3511 0 0.8058 1.77215</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
@@ -2839,7 +2839,7 @@
       </link>
       <pose frame=''>7.50106 7.81395 0 0 -0 0</pose>
     </model>
-    <model name='red_ball_0'>
+    <model name='red_ball_1'>
       <link name='link'>
         <pose frame=''>0 0 0.08 0 -0 0</pose>
         <inertial>
@@ -2892,8 +2892,8 @@
           <surface>
             <friction>
               <ode>
-                <mu>0.9</mu>
-                <mu2>0.9</mu2>
+                <mu>1</mu>
+                <mu2>1</mu2>
                 <fdir1>0 0 0</fdir1>
                 <slip1>0</slip1>
                 <slip2>0</slip2>
@@ -2909,8 +2909,8 @@
               </torsional>
             </friction>
             <bounce>
-              <restitution_coefficient>0.1</restitution_coefficient>
-              <threshold>10</threshold>
+              <restitution_coefficient>1</restitution_coefficient>
+              <threshold>0</threshold>
             </bounce>
             <contact>
               <collide_without_contact>0</collide_without_contact>
@@ -2921,7 +2921,7 @@
                 <soft_erp>0.2</soft_erp>
                 <kp>1e+13</kp>
                 <kd>1</kd>
-                <max_vel>0.1</max_vel>
+                <max_vel>10</max_vel>
                 <min_depth>0</min_depth>
               </ode>
               <bullet>
@@ -2938,7 +2938,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose frame=''>3.00236 -2.04612 0 0 -0 0</pose>
+      <pose frame=''>5.48532 -5.58906 0 0 -0 0</pose>
     </model>
   </world>
 </sdf>
