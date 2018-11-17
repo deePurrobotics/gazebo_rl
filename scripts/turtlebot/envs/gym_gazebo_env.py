@@ -14,10 +14,10 @@ class GymGazeboEnv(gym.Env):
     2)If the simulation was running already for some reason, we need to reset the controlers.
       This has to do with the fact that some plugins with tf, dont understand the reset of the simulation and need to be reseted to work properly.
   """
-  def __init__(self, start_init_physics_parameters=True, reset_world_or_sim="SIMULATION"):
+  def __init__(self, start_init_physics_parameters=True, reset_world_or_sim="NO_RESET_SIM"):
     # To reset Simulations
     rospy.logdebug("START init RobotGazeboEnv")
-    self.gazebo = GazeboConnection(start_init_physics_parameters,reset_world_or_sim)
+    self.gazebo = GazeboConnection(start_init_physics_parameters,reset_world_or_sim="NO_RESET_SIM")
     self.seed()
     rospy.logdebug("END init RobotGazeboEnv")
 
