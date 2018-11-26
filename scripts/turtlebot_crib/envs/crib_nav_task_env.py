@@ -210,7 +210,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     return self._episode_done
 
   def _compute_reward(self):
-    if sum(self.current_position>4.8): # turtlebot close to edge
+    if sum(np.absolute(self.current_position)>4.8): # turtlebot close to edge
       reward = 0
       self._episode_done = True
       rospy.logwarn("Turtlebot is too close to the edge, task will be reset...")
