@@ -129,9 +129,9 @@ if __name__ == "__main__":
   reward_over_time_list = []
   reward_list = []
   # make storage for q tables
-  cwd = os.getcwd()
+  script_path = os.path.dirname(os.path.realpath(__file__))
   today = datetime.datetime.today().strftime("%Y%m%d")
-  qtable_dir = os.path.join(cwd, "qtable_"+today+"_dense_reward")
+  qtable_dir = os.path.join(script_path, "qtable", today+"_dense_reward")
   if not os.path.exists(os.path.dirname(qtable_dir)):
     try:
       os.makedirs(qtable_dir)
@@ -197,3 +197,4 @@ if __name__ == "__main__":
         pickle.dump(Q,pk)
 
   plt.plot(reward_over_time_list)
+  plt.show()

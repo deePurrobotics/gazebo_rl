@@ -39,8 +39,8 @@ class GymGazeboEnv(gym.Env):
     self._take_action(action)
     self.gazebo.pauseSim()
     obs = self._get_observation()
-    done = self._is_done()
     reward = self._compute_reward()
+    done = self._is_done()
     info = self._post_information()
 
     return obs, reward, done, info
