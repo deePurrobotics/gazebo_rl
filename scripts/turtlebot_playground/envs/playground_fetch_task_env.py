@@ -29,31 +29,12 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     self.max_linear_speed = .8
     self.max_angular_speed = math.pi / 3
     # observation limits
-    self.max_x = 5
-    self.max_y = 5
-    self.max_vx = 2
-    self.max_vy = 2
-    self.max_cosyaw = 1
-    self.max_sinyaw = 1
-    self.max_yawdot = math.pi
     # action space
     self.high_action = np.array([self.max_linear_speed, self.max_angular_speed])
     self.low_action = -self.high_action
     self.action_space = spaces.Box(low=self.low_action, high=self.high_action)
     # observation space
-    self.high_observation = np.array(
-      [
-        self.max_x,
-        self.max_y,
-        self.max_vx,
-        self.max_vy,
-        self.max_cosyaw,
-        self.max_sinyaw,
-        self.max_yawdot
-      ]
-    )
-    self.low_observation = -self.high_observation
-    self.observation_space = spaces.Box(low=self.low_observation, high=self.high_observation) 
+    self.rgb_space = spaces.Box(low=0, high=255, shape=(200, 200, 3)) 
     # observation
     self.observation = np.zeros(self.observation_space.shape[0])
     self.observation[4] = self.max_cosyaw

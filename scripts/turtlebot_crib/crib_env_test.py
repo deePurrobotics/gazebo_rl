@@ -23,7 +23,7 @@ env = gym.make('CribNav-v0')
 for episode in range(10):
   state, info = env.reset()
   done = False
-  for step in range(128):
+  for step in range(32):
     action = env.action_space.sample()
     next_state, reward, done, info = env.step(action)
     print("Episode : {}, Step: {}, \nCurrent position: {}, Goal position: {}, Reward: {:.4f}".format(

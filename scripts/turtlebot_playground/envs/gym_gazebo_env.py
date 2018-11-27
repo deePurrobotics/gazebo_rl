@@ -39,8 +39,8 @@ class GymGazeboEnv(gym.Env):
     self._take_action(action)
     self.gazebo.pauseSim()
     obs = self._get_observation()
-    done = self._is_done()
     reward = self._compute_reward()
+    done = self._is_done()
     info = self._post_information()
 
     return obs, reward, done, info
@@ -51,15 +51,16 @@ class GymGazeboEnv(gym.Env):
     """
     # self.gazebo.pauseSim()
     rospy.logdebug("Reseting RobotGazeboEnvironment")
+    # self._reset_sim()
+    # self.gazebo.unpauseSim()
+    # self._set_init()
+    # self.gazebo.pauseSim()
     self._reset_sim()
-    self.gazebo.unpauseSim()
-    self._set_init()
-    self.gazebo.pauseSim()
     obs = self._get_observation()
     info = self._post_information()
     rospy.logdebug("END Reseting RobotGazeboEnvironment")
     return obs, info
-  
+
   def close(self):
     """
     Function executed when closing the environment.
@@ -73,15 +74,22 @@ class GymGazeboEnv(gym.Env):
     """Resets a simulation
     """
     rospy.logdebug("START robot gazebo _reset_sim")
-    self.gazebo.pauseSim()
+    # self.gazebo.pauseSim()
+    # self.gazebo.resetSim()
+    # self.gazebo.unpauseSim()
+    # self._check_all_systems_ready()
+    # self.gazebo.pauseSim()
+    self.gazebo.unpauseSim()
     self.gazebo.resetSim()
+    self._set_init()
+    self.gazebo.pauseSim()
     self.gazebo.unpauseSim()
     self._check_all_systems_ready()
-    self.gazebo.pauseSim()    
+    self.gazebo.pauseSim()
     rospy.logdebug("END robot gazebo _reset_sim")
     
     return True
-
+  
   def _set_init(self):
     """Sets the Robot in its init pose
     """
