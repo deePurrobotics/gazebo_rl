@@ -16,23 +16,22 @@ from gazebo_msgs.msg import ModelStates, LinkStates
 # import our training environment
 from envs import playground_fetch_task_env # need write task env
 
-rospy.init_node('env_test', anonymous=True, log_level=rospy.DEBUG)    
+rospy.init_node('env_test', anonymous=True, log_level=rospy.WARN)    
 env = gym.make('PlaygroundFetch-v0')
 
 # test env with random sampled actions
-# for episode in range(10):
-#   state, info = env.reset()
-#   done = False
-#   for step in range(128):
-#     action = env.action_space.sample()
-#     next_state, reward, done, info = env.step(action)
-#     print("Episode : {}, Step: {}, \nCurrent position: {}, Goal position: {}, Reward: {:.4f}".format(
-#       episode,
-#       step,
-#       info["current_position"],
-#       info["goal_position"],
-#       reward
-#     ))
-#     if done:
-#       break
-    
+for episode in range(10):
+  state, info = env.reset()
+  done = False
+  for step in range(32):
+    action = env.action_space.sample()
+    next_state, reward, done, info = env.step(action)
+    print("Episode : {}, Step: {}, \nCurrent pose: {}, Goal position: {}, Reward: {:.4f}".format(
+      episode,
+      step,
+      info["current_pose"],
+      info["goal_position"],
+      reward
+    ))
+    if done:
+      break

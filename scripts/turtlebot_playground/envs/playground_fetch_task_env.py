@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import rospy
 import numpy as np
+import pandas as pd
 import time
 import math
 import random
@@ -11,7 +12,7 @@ from .turtlebot_robot_env import TurtlebotRobotEnv
 from gym.envs.registration import register
 
 from gazebo_msgs.msg import ModelState
-from geometry_msgs.msg import Pose, Twist
+from geometry_msgs.msg import Pose, Twist, Point
 from cv_bridge import CvBridge, CvBridgeError
 
 # Register crib env 
@@ -47,10 +48,9 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
       self.linacc_space
     ))
     # info, initial position and goal position
-    self.init_position = np.zeros(2)
-    self.current_position = np.zeros(2)
-    self.previous_position = np.zeros(2)
-    self.goal_position = np.zeros(2)
+    self.init_pose = Pose()
+    self.curr_pose = Pose()
+    self.goal_position = Point()
     self.info = {}
     # Set model state
     self.set_robot_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
@@ -70,8 +70,7 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
       goal_position: array([x, y])      
     """
     rospy.logdebug("Start initializing robot...")
-    self.current_position = self.init_position
-    # set turtlebot inside crib, away from crib edges
+    # set turtlebot init pose
     mag = random.uniform(0, 1) # robot vector magnitude
     ang = random.uniform(-math.pi, math.pi) # robot vector orientation
     x = mag * math.cos(ang)
@@ -87,28 +86,19 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     robot_state.pose.orientation.z = math.sqrt(1 - w**2)
     robot_state.pose.orientation.w = w
     robot_state.reference_frame = "world"
-    self.init_position = np.array([x, y])
-    self.previous_position = self.init_position
-    # set goal point using pole coordinate
-    goal_r = random.uniform(0, 8) # goal vector magnitude
-    goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
-    goal_x = goal_r * math.cos(goal_theta)
-    goal_y = goal_r * math.sin(goal_theta)
-    self.goal_position = np.array([goal_x, goal_y])
-    # reset goal if it too close to bot's original position
-    while np.linalg.norm(self.goal_position - self.init_position) <= 0.5:
-      rospy.logerr("Goal was set too close to the robot, reset the goal...")
-      goal_r = random.uniform(0, 4.8) # goal vector magnitude
-      goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
-      goal_x = goal_r * math.cos(goal_theta)
-      goal_y = goal_r * math.sin(goal_theta)
-      self.goal_position = np.array([goal_x, goal_y])
-    # set pin's model state
+    # set red_ball init position and velocity
+    mag_ball = random.uniform(0 ,5)
+    ang_ball = random.uniform(-math.pi, math.pi)
+    x_ball = mag_ball * math.cos(ang_ball)
+    y_ball = mag_ball * math.sin(ang_ball)
     ball_state = ModelState()
     ball_state.model_name = "red_ball"
-    ball_state.pose.position.x = goal_x
-    ball_state.pose.position.y = goal_y
-    ball_state.pose.position.z = 2.5
+    ball_state.pose.position.x = x_ball
+    ball_state.pose.position.y = y_ball
+    ball_state.pose.position.z = 3
+    ball_state.twist.linear.x = random.uniform(-4, 4)
+    ball_state.twist.linear.y = random.uniform(-4, 4)
+    ball_state.twist.linear.z = random.uniform(-0.01, 0.01)
     ball_state.reference_frame = "world"
     # publish model_state to set bot
     rate = rospy.Rate(100)
@@ -116,14 +106,17 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
       self.set_robot_state_publisher.publish(robot_state)
       self.set_ball_state_publisher.publish(ball_state)
       rate.sleep()
-    
-    rospy.logwarn("Robot was initiated as {}".format(self.init_position))
+      
+    self.init_pose = robot_state.pose
+    self.curr_pose = robot_state.pose
+    self.goal_position = ball_state.pose.position
+    rospy.logwarn("Robot was initiated as {}".format(self.init_pose))
     # Episode cannot done
     self._episode_done = False
     # Give the system a little time to finish initialization
     rospy.logdebug("Finish initialize robot.")
     
-    return self.init_position, self.goal_position
+    return self.init_pose, self.goal_position
     
   def _take_action(self, action):
     """
@@ -154,68 +147,67 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
                     linear_acceleration: (3,))
     """
     rospy.logdebug("Start Get Observation ==>")
-    model_states = self.get_model_states() # refer to turtlebot_robot_env
-    # update previous position
-    self.previous_position = self.current_position    
-    rospy.logdebug("model_states: {}".format(model_states))
-    x = model_states.pose[-1].position.x # turtlebot was the last model in model_states
-    y = model_states.pose[-1].position.y
-    self.current_position = np.array([x, y])
-    v_x = model_states.twist[-1].linear.x
-    v_y = model_states.twist[-1].linear.y
-    quat = (
-      model_states.pose[-1].orientation.x,
-      model_states.pose[-1].orientation.y,
-      model_states.pose[-1].orientation.z,
-      model_states.pose[-1].orientation.w
-    )
-    euler = tf.transformations.euler_from_quaternion(quat)
-    cos_yaw = math.cos(euler[2])
-    sin_yaw = math.sin(euler[2])
-    yaw_dot = model_states.twist[-1].angular.z
+    # get observations in observation_space
+    bridge = CvBridge()
+    rgb_obs = bridge.imgmsg_to_cv2(self.camera_rgb_image_raw, "bgr8")
+    # convert depth_image into pandas DataFrame to sub nan with inf
+    depth_df = pd.DataFrame(bridge.imgmsg_to_cv2(self.camera_depth_image_raw, "32FC1")).replace(np.nan, np.inf)
+    depth_obs = depth_df.values
+    # convert laser_scan into pandas DataFrame to sub nan with inf
+    laser_df = pd.DataFrame(list(self.laser_scan.ranges)).replace(np.nan, np.inf)
+    laser_obs = laser_df.values
+    angvel_obs = np.array([self.imu_data.angular_velocity.x,
+                           self.imu_data.angular_velocity.y,
+                           self.imu_data.angular_velocity.z])
+    linacc_obs = np.array([self.imu_data.linear_acceleration.x,
+                           self.imu_data.linear_acceleration.y,
+                           self.imu_data.linear_acceleration.z])
+    self.observation = (rgb_obs, depth_obs, laser_obs, angvel_obs, linacc_obs)
     
-    self.observation = np.array([x, y, v_x, v_y, cos_yaw, sin_yaw, yaw_dot])
     rospy.logdebug("Observation ==> {}".format(self.observation))
+    # get info
+    model_states = self.get_model_states()
+    self.curr_pose = model_states.pose[model_states.name.index("mobile_base")]
+    self.goal_position = model_states.pose[model_states.name.index("red_ball")].position
     
     return self.observation
 
   def _post_information(self):
     """
     Return:
-      info: {"init_position", "goal_position", "current_position", "previous_position"}
+      info: {"init_pose", "goal_position", "current_pose"}
     """
     self.info = {
-      "init_position": self.init_position,
-      "current_position": self.current_position,
-      "previous_position": self.previous_position
+      "initial_pose": self.init_pose,
+      "goal_position": self.goal_position,
+      "current_pose": self.curr_pose
     }
     
     return self.info
 
   def _is_done(self):
     """
-    If TurtleBot moves into a small circle around the goal, return done==True
-    Args:
-      obs: observation
-      goal: goal position
-    Return:
-      episode_done
+    Return True if self._episode_done
     """
     
     return self._episode_done
 
   def _compute_reward(self):
-    if not self._episode_done:
-    #   if np.linalg.norm(self.current_position-self.goal_position) \
-    #  < np.linalg.norm(self.previous_position-self.goal_position): # if move closer
-    #     reward = 0
-    #   else:
-    #     reward = -1
-      reward = 0
-    else:
-      # if bot reached goal, the init distance will be the reward
-      # reward = np.linalg.norm(self.goal_position-self.init_position)
+    distance = np.linalg.norm(
+      np.array([
+        self.curr_pose.position.x - self.goal_position.x,
+        self.curr_pose.position.y - self.goal_position.y,
+        self.curr_pose.position.z - self.goal_position.z
+      ])
+    )
+    if distance < 0.1:
       reward = 1
+      self._episode_done = True
+      rospy.logwarn("\n!!!\nTurtlebot found the ball\n!!!")
+    else:
+      reward = 0
+      self._episode_done = False
+      rospy.logwarn("TurtleBot is working very hard to locate the red ball @ {}...".format(self.goal_position))
     rospy.logdebug("Compute reward done. \nreward = {}".format(reward))
     
     return reward

@@ -58,7 +58,7 @@ def imu_cb(data):
                  # "---\nLinear_acceleration: \n{}\n".format(lin_acc))
   
 if __name__ == "__main__":
-  rospy.init_node('sensors_test', anonymous=True, log_level=rospy.DEBUG)
+  rospy.init_node('sensors_test', anonymous=True, log_level=rospy.WARN)
   rospy.Subscriber("/camera/rgb/image_raw", Image, rgb_cb)
   rospy.Subscriber("/camera/depth/image_raw", Image, depth_cb)
   rospy.Subscriber("/camera/depth/points", PointCloud2, point_cb)
