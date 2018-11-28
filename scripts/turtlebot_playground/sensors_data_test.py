@@ -44,7 +44,7 @@ def point_cb(data):
 def laser_cb(data):
   global laser_scan
   laser_scan = data.ranges
-  # rospy.logdebug("laser_scan: \n---\n{}".format(laser_scan))
+  rospy.logdebug("laser_scan: \n---\n{}".format(laser_scan))
 
 def imu_cb(data):
   global orientation
@@ -53,9 +53,9 @@ def imu_cb(data):
   orientation = data.orientation
   ang_vel = data.angular_velocity
   lin_acc = data.linear_acceleration
-  rospy.logdebug("Orientaion: \n{}\n".format(orientation),
-                 "---\nAngular_velocity: \n{}\n".format(ang_vel),
-                 "---\nLinear_acceleration: \n{}\n".format(lin_acc))
+  # rospy.logdebug("Orientaion: \n{}\n".format(orientation),
+                 # "---\nAngular_velocity: \n{}\n".format(ang_vel),
+                 # "---\nLinear_acceleration: \n{}\n".format(lin_acc))
   
 if __name__ == "__main__":
   rospy.init_node('sensors_test', anonymous=True, log_level=rospy.DEBUG)

@@ -12,12 +12,12 @@ from gym.envs.registration import register
 
 from gazebo_msgs.msg import ModelState
 from geometry_msgs.msg import Pose, Twist
+from cv_bridge import CvBridge, CvBridgeError
 
 # Register crib env 
 register(
   id='PlaygroundFetch-v0',
   entry_point='envs.playground_fetch_task_env:PlaygroundFetchTaskEnv')
-
 
 class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
   def __init__(self):
@@ -34,10 +34,18 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     self.low_action = -self.high_action
     self.action_space = spaces.Box(low=self.low_action, high=self.high_action)
     # observation space
-    self.rgb_space = spaces.Box(low=0, high=255, shape=(200, 200, 3)) 
-    # observation
-    self.observation = np.zeros(self.observation_space.shape[0])
-    self.observation[4] = self.max_cosyaw
+    self.rgb_space = spaces.Box(low=0, high=255, shape=(480, 640, 3))
+    self.depth_space = spaces.Box(low=0, high=np.inf, shape=(480,640))
+    self.laser_space = spaces.Box(low=0,high=np.inf, shape=(640,))
+    self.angvel_space = spaces.Box(low=-np.inf, high=np.inf, shape=(3,))
+    self.linacc_space = spaces.Box(low=-np.inf, high=np.inf, shape=(3,))
+    self.observation_space = spaces.Tuple((
+      self.rgb_space,
+      self.depth_space,
+      self.laser_space,
+      self.angvel_space,
+      self.linacc_space
+    ))
     # info, initial position and goal position
     self.init_position = np.zeros(2)
     self.current_position = np.zeros(2)
@@ -46,6 +54,7 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     self.info = {}
     # Set model state
     self.set_robot_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
+    self.set_ball_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
     # not done
     self._episode_done = False
     # Here we will add any init functions prior to starting the MyRobotEnv
@@ -54,8 +63,8 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
   def _set_init(self):
     """ 
     Set initial condition for simulation
-      1. Set turtlebot at a random pose inside crib by publishing /gazebo/set_model_state topic
-      2. Set a goal point inside crib for turtlebot to navigate towards
+      1. Set turtlebot at a random pose inside playground by publishing /gazebo/set_model_state topic
+      2. Set a goal point inside playground for red ball
     Returns: 
       init_position: array([x, y]) 
       goal_position: array([x, y])      
@@ -78,14 +87,34 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     robot_state.pose.orientation.z = math.sqrt(1 - w**2)
     robot_state.pose.orientation.w = w
     robot_state.reference_frame = "world"
-    
     self.init_position = np.array([x, y])
     self.previous_position = self.init_position
-
+    # set goal point using pole coordinate
+    goal_r = random.uniform(0, 8) # goal vector magnitude
+    goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
+    goal_x = goal_r * math.cos(goal_theta)
+    goal_y = goal_r * math.sin(goal_theta)
+    self.goal_position = np.array([goal_x, goal_y])
+    # reset goal if it too close to bot's original position
+    while np.linalg.norm(self.goal_position - self.init_position) <= 0.5:
+      rospy.logerr("Goal was set too close to the robot, reset the goal...")
+      goal_r = random.uniform(0, 4.8) # goal vector magnitude
+      goal_theta = random.uniform(-math.pi, math.pi) # goal vector orientation
+      goal_x = goal_r * math.cos(goal_theta)
+      goal_y = goal_r * math.sin(goal_theta)
+      self.goal_position = np.array([goal_x, goal_y])
+    # set pin's model state
+    ball_state = ModelState()
+    ball_state.model_name = "red_ball"
+    ball_state.pose.position.x = goal_x
+    ball_state.pose.position.y = goal_y
+    ball_state.pose.position.z = 2.5
+    ball_state.reference_frame = "world"
     # publish model_state to set bot
     rate = rospy.Rate(100)
     for _ in range(10):
       self.set_robot_state_publisher.publish(robot_state)
+      self.set_ball_state_publisher.publish(ball_state)
       rate.sleep()
     
     rospy.logwarn("Robot was initiated as {}".format(self.init_position))
@@ -118,7 +147,11 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     """
     Get observations from env
     Return:
-      observation: [x, y, v_x, v_y, cos(yaw), sin(yaw), yaw_dot]
+      observation: (rgb_image: (480,640,3),
+                    depth_image: (480,640),
+                    laser_scan: (640),
+                    angular_velocity: (3,)
+                    linear_acceleration: (3,))
     """
     rospy.logdebug("Start Get Observation ==>")
     model_states = self.get_model_states() # refer to turtlebot_robot_env
