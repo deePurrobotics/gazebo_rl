@@ -20,10 +20,10 @@ rospy.init_node('env_test', anonymous=True, log_level=rospy.WARN)
 env = gym.make('PlaygroundFetch-v0')
 
 # test env with random sampled actions
-for episode in range(10):
+for episode in range(100):
   state, info = env.reset()
   done = False
-  for step in range(32):
+  for step in range(16):
     action = env.action_space.sample()
     next_state, reward, done, info = env.step(action)
     print("Episode : {}, Step: {}, \nCurrent pose: {}, Goal position: {}, Reward: {:.4f}".format(

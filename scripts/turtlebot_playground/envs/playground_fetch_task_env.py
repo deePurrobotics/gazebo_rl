@@ -75,7 +75,8 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     ang = random.uniform(-math.pi, math.pi) # robot vector orientation
     x = mag * math.cos(ang)
     y = mag * math.sin(ang)
-    w = random.uniform(-1.0, 1.0)    
+    w = random.uniform(-1.0, 1.0)
+    # generate robot_state
     robot_state = ModelState()
     robot_state.model_name = "mobile_base"
     robot_state.pose.position.x = x
@@ -87,18 +88,29 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     robot_state.pose.orientation.w = w
     robot_state.reference_frame = "world"
     # set red_ball init position and velocity
-    mag_ball = random.uniform(0 ,5)
+    mag_ball = random.uniform(0 ,9)
     ang_ball = random.uniform(-math.pi, math.pi)
     x_ball = mag_ball * math.cos(ang_ball)
     y_ball = mag_ball * math.sin(ang_ball)
+    # reset ball if too close to bot
+    while np.linalg.norm(np.array([x_ball, y_ball])-np.array([x, y])) <= 1:
+      rospy.logerr("Goal was set too close to the robot, reset the goal...")
+      mag_ball = random.uniform(0 ,9)
+      ang_ball = random.uniform(-math.pi, math.pi)
+      x_ball = mag_ball * math.cos(ang_ball)
+      y_ball = mag_ball * math.sin(ang_ball)
+    # generate ball_state
     ball_state = ModelState()
     ball_state.model_name = "red_ball"
     ball_state.pose.position.x = x_ball
     ball_state.pose.position.y = y_ball
     ball_state.pose.position.z = 3
-    ball_state.twist.linear.x = random.uniform(-4, 4)
-    ball_state.twist.linear.y = random.uniform(-4, 4)
+    ball_state.twist.linear.x = random.uniform(-0.1, 0.1)
+    ball_state.twist.linear.y = random.uniform(-0.1, 0.1)
     ball_state.twist.linear.z = random.uniform(-0.01, 0.01)
+    ball_state.twist.angular.x = random.uniform(-0.1, 0.1)
+    ball_state.twist.angular.y = random.uniform(-0.1, 0.1)
+    ball_state.twist.angular.z = random.uniform(-0.1, 0.1)
     ball_state.reference_frame = "world"
     # publish model_state to set bot
     rate = rospy.Rate(100)
