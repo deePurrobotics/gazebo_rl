@@ -92,7 +92,7 @@ def train(env_name='CribNav-v0', hidden_sizes=[32], lr=1e-2,
         batch_rets.append(ep_ret)
         batch_lens.append(ep_len)
         # the weight for each logprob(a|s) is R(tau)
-        batch_weights += ep_ret * ep_len
+        batch_weights += [ep_ret] * ep_len
         # reset episode-specific variables
         # obs, done, ep_rews = env.reset(), False, []
         # end experience loop if we have enough of it
