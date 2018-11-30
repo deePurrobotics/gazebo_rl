@@ -16,24 +16,64 @@ class bcolors:
   BOLD = '\033[1m'
   UNDERLINE = '\033[4m'
 
-
-def obs2state(observation, low):
+def obs_to_state(obs, info):
   """
-  Helper function convert observation to discrete state
-  We only use x and y to represent state, so the first 2 element in observation
-  Args:
-    observation: 0-d numpy array e.g. (-1.2, 3.3)
-    low: lower bound of observation
-  Return:
-    state: a scalar
+  This function converts observation into state
+  Args: 
+    obs: [x, y, v_x, v_y, cos(theta), sin(theta), theta_dot]
+        theta= robot orientation, alpha= angle between r->g and x-axis
+    info: {"goal_position", ...}
+  Returns:
+    state: [r_norm, p_norm, alpha, alpha_dot, beta, beta_dot]
+      r_norm: distance from map origin to robot
+      p_norm: distance from robot to goal
+      alpha: angle from map's x to r
+      beta: angle from robot's x to p
+      *_dot: angular velocity
   """
-  x = observation[0]
-  y = observation[1]
-  ind_x = int(x - low[0]) # index of x
-  ind_y = int(y - low[1])
-  state = ind_x*10 + ind_y
+  # compute states
+  r = obs[:2]
+  p = info["goal_position"] - obs[:2]
+  r_norm = np.linalg.norm(r) # sqrt(x^2+y^2)
+  p_norm = np.linalg.norm(p)
+  alpha = np.arctan2(obs[1], obs[0])
+  alpha_dot = np.arctan2(obs[3], obs[2])
+  # comput phi: angle from map's x_axis to p  
+  x_axis = np.array([1, 0])
+  y_axis = np.array([0, 1])
+  cos_phi = np.dot(p, x_axis) / (np.linalg.norm(p)*np.linalg.norm(x_axis))
+  sin_phi = np.dot(p, y_axis) / (np.linalg.norm(p)*np.linalg.norm(y_axis))
+  phi = np.arctan2(sin_phi, cos_phi)
+  # compute beta in [-pi, pi]
+  beta = phi - np.arctan2(obs[-2], obs[-3])
+  if beta > np.pi:
+    beta -= 2*np.pi
+  elif beta < -np.pi:
+    beta += 2*np.pi
+  beta_dot = obs[-1]
+  state = np.array([r_norm, p_norm, alpha, alpha_dot, beta, beta_dot]).astype(np.float32)
 
   return state
+
+def discretize_state(state, boxes):
+  """
+  Converts continuous state into discrete states
+  Args: 
+    state:
+    boxes:
+  Returns:
+    index: state index in Q table, represent in tuple
+  """
+  # match state into box
+  index = []
+  for i_s, st in enumerate(state):
+    for i_b, box in enumerate(boxes[i_s]):
+      if st >= box[0] and st <= box[1]:
+        index.append(i_b)
+        break
+  assert len(index) == 6
+  
+  return tuple(index)
 
 def generate_action_sequence(num_sequences, len_horizon, num_actions):
   """ Generate S random action sequences with H horizon
@@ -117,19 +157,4 @@ def greedy_action(model, num_actions, state, goal):
 
   return optimal_action
 
-def compute_reward(state):
-  """
-  Compute reward based on current state. 
-  This function should be identical with the one in task env
-  Args: 
-    state: [dx, dy, v_x, v_y, cos(ori), sin(ori), v_ori, cos(goal), sin(goal)]
-  Returns:
-    reward
-  """
-  if np.linalg.norm(state[:2]) <= 0.1:
-    reward = 100
-  else:
-    reward = 0
-
-  return reward
     
