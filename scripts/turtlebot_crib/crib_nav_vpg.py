@@ -94,18 +94,20 @@ def train(env_name='CribNav-v0', hidden_sizes=[32], lr=1e-2,
         # the weight for each logprob(a|s) is R(tau)
         batch_weights += [ep_ret] * ep_len
         # reset episode-specific variables
-        # obs, done, ep_rews = env.reset(), False, []
+        obs, info= env.reset()
         # end experience loop if we have enough of it
         if len(batch_sta) > batch_size:
           break
 
-      # take a single policy gradient update step
-      batch_loss, _ = sess.run([loss, train_op],
-                                 feed_dict={
-                                   sta_ph: np.array(batch_sta),
-                                   act_ph: np.array(batch_acts),
-                                   weights_ph: np.array(batch_weights)
-                                 })
+    # take a single policy gradient update step
+    batch_loss, _ = sess.run(
+      [loss, train_op],
+      feed_dict={
+        sta_ph: np.array(batch_sta),
+        act_ph: np.array(batch_acts),
+        weights_ph: np.array(batch_weights)
+      }
+    )
     return batch_loss, batch_rets, batch_lens
 
   # training loop
