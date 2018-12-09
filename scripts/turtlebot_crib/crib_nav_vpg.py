@@ -1,4 +1,4 @@
-# #! /usr/bin/env python
+#! /usr/bin/env python
 
 """
 Model based control for turtlebot with vanilla policy gradient in crib environment
