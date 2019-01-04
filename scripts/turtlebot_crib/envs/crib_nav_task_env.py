@@ -83,7 +83,7 @@ class CribNavTaskEnv(TurtlebotRobotEnv):
     rospy.logdebug("Start initializing robot...")
     self.current_position = self.init_position
     # set turtlebot inside crib, away from crib edges
-    mag = random.uniform(0, 4) # robot vector magnitude
+    mag = random.uniform(0, 1) # robot vector magnitude
     ang = random.uniform(-math.pi, math.pi) # robot vector orientation
     x = mag * math.cos(ang)
     y = mag * math.sin(ang)

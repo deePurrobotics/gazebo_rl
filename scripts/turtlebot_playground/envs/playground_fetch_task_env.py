@@ -75,7 +75,8 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     ang = random.uniform(-math.pi, math.pi) # robot vector orientation
     x = mag * math.cos(ang)
     y = mag * math.sin(ang)
-    w = random.uniform(-1.0, 1.0)    
+    w = random.uniform(-1.0, 1.0)
+    # generate robot_state
     robot_state = ModelState()
     robot_state.model_name = "mobile_base"
     robot_state.pose.position.x = x
@@ -87,24 +88,81 @@ class PlaygroundFetchTaskEnv(TurtlebotRobotEnv):
     robot_state.pose.orientation.w = w
     robot_state.reference_frame = "world"
     # set red_ball init position and velocity
-    mag_ball = random.uniform(0 ,5)
+    mag_ball = random.uniform(0 ,9)
     ang_ball = random.uniform(-math.pi, math.pi)
     x_ball = mag_ball * math.cos(ang_ball)
     y_ball = mag_ball * math.sin(ang_ball)
+    # reset ball if too close to bot
+    while np.linalg.norm(np.array([x_ball, y_ball])-np.array([x, y])) <= 1:
+      rospy.logerr("Goal was set too close to the robot, reset the goal...")
+      mag_ball = random.uniform(0 ,9)
+      ang_ball = random.uniform(-math.pi, math.pi)
+      x_ball = mag_ball * math.cos(ang_ball)
+      y_ball = mag_ball * math.sin(ang_ball)
+    # generate ball_state
     ball_state = ModelState()
     ball_state.model_name = "red_ball"
     ball_state.pose.position.x = x_ball
     ball_state.pose.position.y = y_ball
-    ball_state.pose.position.z = 3
-    ball_state.twist.linear.x = random.uniform(-4, 4)
-    ball_state.twist.linear.y = random.uniform(-4, 4)
+    ball_state.pose.position.z = 3.2
+    ball_state.twist.linear.x = random.uniform(-0.2, 0.2)
+    ball_state.twist.linear.y = random.uniform(-0.2, 0.2)
     ball_state.twist.linear.z = random.uniform(-0.01, 0.01)
+    ball_state.twist.angular.x = random.uniform(-0.5, 0.5)
+    ball_state.twist.angular.y = random.uniform(-0.5, 0.5)
+    ball_state.twist.angular.z = random.uniform(-0.5, 0.5)
     ball_state.reference_frame = "world"
+    # set beer cans int poses
+    beer_state = ModelState()
+    beer_0_state = ModelState()
+    beer_1_state = ModelState()
+    beer_2_state = ModelState()
+    beer_state.model_name = "beer"
+    beer_state.pose.position.x = random.uniform(-8,-2)
+    beer_state.pose.position.y = random.uniform(2, 6)
+    beer_state.pose.position.z = random.uniform(0.2, 0.4)
+    beer_state.twist.angular.x = random.uniform(-0.5, 0.5)
+    beer_state.twist.angular.y = random.uniform(-0.5, 0.5)
+    beer_state.twist.angular.z = random.uniform(-0.5, 0.5)
+    beer_state.reference_frame = "world"
+    beer_0_state.model_name = "beer_0"
+    beer_0_state.pose.position.x = random.uniform(-8,-2)
+    beer_0_state.pose.position.y = random.uniform(2, 6)
+    beer_0_state.pose.position.z = random.uniform(0.2, 0.4)
+    beer_0_state.twist.angular.x = random.uniform(-0.5, 0.5)
+    beer_0_state.twist.angular.y = random.uniform(-0.5, 0.5)
+    beer_0_state.twist.angular.z = random.uniform(-0.5, 0.5)
+    beer_0_state.reference_frame = "world"
+    beer_1_state.model_name = "beer_1"
+    beer_1_state.pose.position.x = random.uniform(-8,-2)
+    beer_1_state.pose.position.y = random.uniform(2, 6)
+    beer_1_state.pose.position.z = random.uniform(0.2, 0.4)
+    beer_1_state.twist.angular.x = random.uniform(-0.5, 0.5)
+    beer_1_state.twist.angular.y = random.uniform(-0.5, 0.5)
+    beer_1_state.twist.angular.z = random.uniform(-0.5, 0.5)
+    beer_1_state.reference_frame = "world"
+    beer_2_state.model_name = "beer_2"
+    beer_2_state.pose.position.x = random.uniform(-8,-2)
+    beer_2_state.pose.position.y = random.uniform(2, 6)
+    beer_2_state.pose.position.z = random.uniform(0.2, 0.4)
+    beer_2_state.twist.angular.x = random.uniform(-0.5, 0.5)
+    beer_2_state.twist.angular.y = random.uniform(-0.5, 0.5)
+    beer_2_state.twist.angular.z = random.uniform(-0.5, 0.5)
+    beer_2_state.reference_frame = "world"
+    # setup beer cans publishers
+    beer_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
+    beer_0_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
+    beer_1_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
+    beer_2_state_publisher = rospy.Publisher("/gazebo/set_model_state", ModelState, queue_size=100)
     # publish model_state to set bot
     rate = rospy.Rate(100)
     for _ in range(10):
       self.set_robot_state_publisher.publish(robot_state)
       self.set_ball_state_publisher.publish(ball_state)
+      beer_state_publisher.publish(beer_state)
+      beer_0_state_publisher.publish(beer_0_state)
+      beer_1_state_publisher.publish(beer_1_state)
+      beer_2_state_publisher.publish(beer_2_state)
       rate.sleep()
       
     self.init_pose = robot_state.pose
