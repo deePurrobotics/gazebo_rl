@@ -54,4 +54,10 @@ if __name__ == "__main__":
     for st in range(num_steps):
       batch_state.append(state.copy())
       action = sess.run(actions, feed_dict={state_ph: state[None,:]})[0]
-    
+    if not action:
+      act = np.array([env.action_space.high[0], env.action_space.low[1]]) # id=0 => [high_lin, low_ang]
+    else:
+      act = env.action_space.high # id=1 => [high_lin, high_ang]
+    print(bcolors.WARNING, "action: {}".format(act), bcolors.ENDC)
+    obs, rew, done, info = env.step(act)
+    state = obs_to_state(obs, info)    
