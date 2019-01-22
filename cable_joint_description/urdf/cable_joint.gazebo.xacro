@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<robot>
+
+  <gazebo reference="link_base">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="link_lower_support">
+    <material>Gazebo/DarkGrey</material>
+  </gazebo>
+
+  <gazebo reference="link_pin_west">
+    <material>Gazebo/Yellow</material>
+  </gazebo>
+
+  <gazebo reference="link_pin_east">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+  
+  <gazebo reference="link_ball_roll">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <gazebo reference="link_ball_pitch">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <gazebo reference="link_ball_yaw">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <gazebo reference="link_upper_support">
+    <material>Gazebo/DarkGrey</material>
+  </gazebo>
+
+  <gazebo reference="link_disc">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <gazebo reference="link_cube_northeast">
+    <material>Gazebo/Turquoise</material>
+  </gazebo>
+
+  <gazebo reference="link_cube_northwest">
+    <material>Gazebo/Gold</material>
+  </gazebo>
+
+  <gazebo reference="link_cube_southwest">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+
+  <gazebo reference="link_cube_southeast">
+    <material>Gazebo/Indigo</material>
+  </gazebo>
+
+</robot>
