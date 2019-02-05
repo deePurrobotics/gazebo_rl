@@ -101,11 +101,8 @@
     </inertial>
   </link>
 
-  <!-- In order to correctly display camera -->
-   <joint name="camera_optical_joint" type="fixed">
-    <!-- these values have to be these values otherwise the gazebo camera
-        image won't be aligned properly with the frame it is supposedly
-        originating from -->
+  <!-- camera needs to be rotated coreectly -->
+  <joint name="camera_optical_joint" type="fixed">
     <origin xyz="0 0 0" rpy="${-PI/2} ${-PI/2} ${PI/2}"/>
     <parent link="link_lens"/>
     <child link="link_optical"/>
@@ -201,9 +198,9 @@
   <joint name="joint_lowersupport_ballroll" type="revolute">
     <parent link="link_lower_support"/>
     <child link="link_ball_roll"/>
-    <origin rpy="0 0 0" xyz="0 0 0.14"/>
-    <axis xyz="1 0 0"/>
-    <limit effort="10" velocity="1000" lower="-${PI/3}" upper="${PI/3}"/>
+    <origin rpy="${PI/2} 0 0" xyz="0 0 0.14"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" velocity="1000" lower="${-PI/2}" upper="${PI/2}"/>
   </joint>
 
   <link name="link_ball_roll">
@@ -223,16 +220,16 @@
     <inertial>
       <mass value="0.5"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
     </inertial>
   </link>
 
   <joint name="joint_ballroll_ballpitch" type="revolute">
     <parent link="link_ball_roll"/>
     <child link="link_ball_pitch"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="10" velocity="1000" lower="-${PI/3}" upper="${PI/3}"/>
+    <origin rpy="0 ${PI/2} 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" velocity="1000" lower="${-PI/2}" upper="${PI/2}"/>
   </joint>
 
   <link name="link_ball_pitch">
@@ -252,16 +249,16 @@
     <inertial>
       <mass value="0.5"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
     </inertial>
   </link>
 
   <joint name="joint_ballpitch_ballyaw" type="revolute">
     <parent link="link_ball_pitch"/>
     <child link="link_ball_yaw"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <origin rpy="${-PI/2} 0 0" xyz="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10" velocity="1000" lower="-${PI/12}" upper="${PI/12}"/>
+    <limit effort="100" velocity="1000" lower="${-PI/8}" upper="${PI/8}"/>
   </joint>
 
   <link name="link_ball_yaw">
@@ -315,7 +312,7 @@
   </link>
 
   <joint name="joint_uppersupport_disc" type="revolute">
-    <origin rpy="0 0 0" xyz="0 0 0.04"/>
+    <origin rpy="0 0 ${-PI/2}" xyz="0 0 0.04"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
     <axis rpy="0 0 0" xyz="0 0 1"/>
     <parent link="link_upper_support"/>
