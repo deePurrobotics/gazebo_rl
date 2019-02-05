@@ -4,6 +4,7 @@
     
   <!-- Constants for robot dimensions -->
   <xacro:property name="PI" value="3.1415926535897931"/>
+  <xacro:property name="body_length" value="0.02" /> <!-- Size of square 'camera' box -->
 
   <!-- Import all Gazebo-customization elements, including Gazebo colors -->
   <xacro:include filename="$(find gazebo_rl)/cable_joint_description/urdf/cable_joint.gazebo.xacro" />
@@ -40,6 +41,77 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="2.533" ixy="0" ixz="0" iyy="2.533" iyz="0" izz="5.236"/>
     </inertial>
+  </link>
+
+  <joint name="joint_world_camerabody" type="revolute">
+    <origin rpy="0 0 ${PI/2}" xyz="0 -0.5 ${body_length/2}"/>
+    <parent link="world"/>
+    <child link="link_camera_body"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
+  </joint>
+
+  <link name="link_camera_body">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.5 0"/>
+      <geometry>
+        <box size="${body_length} ${body_length*2} ${body_length*2}"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_length*2} ${body_length*2}"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <inertial>
+      <mass value="0.1"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <joint name="joint_camerabody_lens" type="revolute">
+    <origin rpy="0 ${PI/2} 0" xyz="${body_length/2+body_length/16} 0 0"/>
+    <parent link="link_camera_body"/>
+    <child link="link_lens"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+    <axis rpy="0 0 0" xyz="0 0 1"/>
+  </joint>
+
+  <link name="link_lens">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.5 0"/>
+      <geometry>
+        <cylinder length="${body_length/8}" radius="${body_length/2}"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="${body_length/8}" radius="${body_length/2}"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <mass value="0.01"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <!-- In order to correctly display camera -->
+   <joint name="camera_optical_joint" type="fixed">
+    <!-- these values have to be these values otherwise the gazebo camera
+        image won't be aligned properly with the frame it is supposedly
+        originating from -->
+    <origin xyz="0 0 0" rpy="${-PI/2} ${-PI/2} ${PI/2}"/>
+    <parent link="link_lens"/>
+    <child link="link_optical"/>
+  </joint>
+
+  <link name="link_optical">
   </link>
 
   <joint name="joint_base_lowersupport" type="revolute">
