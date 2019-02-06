@@ -41,6 +41,26 @@
     </sensor>
   </gazebo>
 
+  <gazebo>
+    <plugin filename="libgazebo_ros_force.so" name="gazebo_ros_force">
+      <bodyName>link_cube_northeast</bodyName>
+      <topicName>/force_northeast</topicName>
+    </plugin>
+    <plugin filename="libgazebo_ros_force.so" name="gazebo_ros_force">
+      <bodyName>link_cube_northwest</bodyName>
+      <topicName>/force_northwest</topicName>
+    </plugin>
+    <plugin filename="libgazebo_ros_force.so" name="gazebo_ros_force">
+      <bodyName>link_cube_southeast</bodyName>
+      <topicName>/force_southeast</topicName>
+    </plugin>
+    <plugin filename="libgazebo_ros_force.so" name="gazebo_ros_force">
+      <bodyName>link_cube_southwest</bodyName>
+      <topicName>/force_southwest</topicName>
+    </plugin>
+  </gazebo>
+  
+
   <gazebo reference="link_lens">
     <material>Gazebo/Black</material>
   </gazebo>
